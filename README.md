@@ -113,6 +113,7 @@ ValidID      = "SET:1"
 The script can be used by referring to a configuration and object type only. Any parameter given by command line overwrites values specified in the config file. Use `kix18.DBSync.pl --help` for a detailed parameter listing.
 
 - `config`: path to configuration file instead of command line params
+- `ot`: object to be imported (Contact|Organisation)
 - `url`: URL to KIX backend API (e.g. https://t12345-api.kix.cloud)
 - `u`: KIX user login
 - `p`: KIX user password

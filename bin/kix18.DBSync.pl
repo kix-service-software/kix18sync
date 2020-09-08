@@ -48,7 +48,7 @@ use JSON;
 
 This script retrieves ticket- and asset information from a KIX18 by communicating with its REST-API. Information is stored locally in database tables.
 
-Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
+Use ./bin/kix18.DBSync.pl --config ./config/kix18.DBSync.cfg --ot Contact|Organisation --help [other options]
 
 
 =head1 OPTIONS
@@ -57,6 +57,10 @@ Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
 
 =item
 --config: path to configuration file instead of command line params
+=cut
+
+=item
+--ot: object to be imported (Contact|Organisation)
 =cut
 
 =item
@@ -92,12 +96,62 @@ Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
 
 =head1 REQUIREMENTS
 
-a) Perl-Packages and Environment Settings
+The script has been developed using CentOS8 as target plattform. Following packages must be installed (show for CentOS package names)
 
 =over
 
 =item
-shell> sudo yum install perl-Date-Calc
+shell> sudo yum install perl-Config-Simple
+=cut
+
+=item
+shell> sudo yum install perl-Text-CSV
+=cut
+
+=item
+shell> sudo yum install perl-REST-Client
+=cut
+
+=item
+shell> sudo yum install perl-JSO
+=cut
+
+=item
+shell> sudo yum install perl-LWP-Protocol-https
+=cut
+
+=item
+shell> sudo yum install perl-DBI
+=cut
+
+=item
+shell> sudo yum install perl-URI
+=cut
+
+=item
+shell> sudo yum install perl-Pod-Usage
+=cut
+
+=item
+shell> sudo yum install perl-Getopt-Long
+=cut
+
+=back
+
+Depending on the DBMS to be connected, additional packages might be required, e.g.
+
+=over
+
+=item
+shell> sudo yum install perl-DBD-Pg
+=cut
+
+=item
+shell> sudo yum install perl-DBD-MySQL
+=cut
+
+=item
+shell> sudo yum install perl-DBD-ODBC
 =cut
 
 =back
@@ -106,13 +160,13 @@ shell> sudo yum install perl-Date-Calc
 
 my $Help           = 0;
 my %Config         = ();
-$Config{Verbose}           = 0;
-$Config{ConfigFilePath}    = "";
-$Config{KIXURL}            = "";
-$Config{KIXUserName}       = "";
-$Config{KIXPassword}       = "";
-$Config{'DBUser'}         = "";
-$Config{'DBPassword'}     = "";
+$Config{Verbose}         = 0;
+$Config{ConfigFilePath}  = "";
+$Config{KIXURL}          = "";
+$Config{KIXUserName}     = "";
+$Config{KIXPassword}     = "";
+$Config{DBUser}          = "";
+$Config{DBPassword}      = "";
 
 # read some params from command line...
 GetOptions (
@@ -146,7 +200,7 @@ if( $Config{ConfigFilePath} ) {
 }
 
 # check requried params...
-for my $CurrKey (qw{KIXURL KIXUserName KIXPassword DSN Contact.Table}) {
+for my $CurrKey (qw{ObjectType ConfigFilePath KIXURL KIXUserName KIXPassword DSN DBUser DBPassword}) {
   next if($Config{$CurrKey});
   print STDERR "\nParam $CurrKey required but not defined - aborting.\n\n";
   pod2usage( -verbose => 1);
