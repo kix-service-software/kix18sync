@@ -611,7 +611,9 @@ sub _KIXAPISearchOrg {
     my $Query = {};
     $Query->{Organisation}->{AND} =\@Conditions;
     my @QueryParams = (
-      "search=".uri_escape( to_json( $Query)),
+      # enable following if GET /organisations supports "search"
+      #"search=".uri_escape( to_json( $Query)),
+      "filter=".uri_escape( to_json( $Query)),
     );
     my $QueryParamStr = join( ";", @QueryParams);
 
