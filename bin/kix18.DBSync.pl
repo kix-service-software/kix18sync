@@ -611,14 +611,21 @@ sub _KIXAPISearchOrg {
     my $Query = {};
     $Query->{Organisation}->{AND} =\@Conditions;
     my @QueryParams = (
-      "filter=".uri_escape( to_json( $Query)),
+      "search=".uri_escape( to_json( $Query)),
     );
     my $QueryParamStr = join( ";", @QueryParams);
 
     $Params{Client}->GET( "/api/v1/organisations?$QueryParamStr");
 
+    # this is a q&d workaround for occasionally 500 response which cannot be
+    # explained yet...
+    if( $Client->responseCode() eq "500") {
+      $Params{Client}->GET( "/api/v1/organisations?$QueryParamStr");
+    }
+
     if( $Client->responseCode() ne "200") {
       $Result{Msg} = "Search for organisations failed (Response ".$Client->responseCode().")!";
+      exit(0);
     }
     else {
       my $Response = from_json( $Client->responseContent() );
