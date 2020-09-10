@@ -101,40 +101,13 @@ The script has been developed using CentOS8 as target plattform. Following packa
 =over
 
 =item
-shell> sudo yum install perl-Config-Simple
+shell> sudo yum install perl-Config-Simple perl-Text-CSV perl-REST-Client perl-JSO perl-LWP-Protocol-https perl-DBI perl-URI perl-Pod-Usage perl-Getopt-Long
 =cut
 
 =item
-shell> sudo yum install perl-Text-CSV
+shell> sudo apt install libconfig-simple-perl libtext-csv-perl librest-client-perl libjson-perl liblwp-protocol-https-perl libdbi-perl liburi-perl perl-doc libgetopt-long-descriptive-perl
 =cut
 
-=item
-shell> sudo yum install perl-REST-Client
-=cut
-
-=item
-shell> sudo yum install perl-JSO
-=cut
-
-=item
-shell> sudo yum install perl-LWP-Protocol-https
-=cut
-
-=item
-shell> sudo yum install perl-DBI
-=cut
-
-=item
-shell> sudo yum install perl-URI
-=cut
-
-=item
-shell> sudo yum install perl-Pod-Usage
-=cut
-
-=item
-shell> sudo yum install perl-Getopt-Long
-=cut
 
 =back
 
@@ -143,15 +116,11 @@ Depending on the DBMS to be connected, additional packages might be required, e.
 =over
 
 =item
-shell> sudo yum install perl-DBD-Pg
+shell> sudo yum install perl-DBD-Pg perl-DBD-MySQL perl-DBD-ODBC
 =cut
 
 =item
-shell> sudo yum install perl-DBD-MySQL
-=cut
-
-=item
-shell> sudo yum install perl-DBD-ODBC
+shell> sudo yum install libdbd-pg-perl libdbd-mysql-perl libdbd-odbc-perl
 =cut
 
 =back
@@ -300,7 +269,7 @@ else {
       my %Data = ();
       my $RowIndex = 0;
       for my $CurrKey ( @RowNames ) {
-        $Data{ $RevMap{$CurrKey} } = $CurrLine[$RowIndex];
+        $Data{ $RevMap{$CurrKey} } = decode("utf-8", $CurrLine[$RowIndex]);
         $RowIndex++;
       }
 

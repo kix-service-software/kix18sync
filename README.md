@@ -16,24 +16,30 @@ Provides a client for importing data from a remote DB to KIX18 REST-API, support
 
 #### Perl-Packages and Environment Settings
 
-The script has been developed using CentOS8 as target plattform. Following packages must be installed (show for CentOS package names)
+The script has been developed using CentOS8 as target plattform. Following packages must be installed:
+
+- CentOS/RHEL
 ```
-shell> sudo yum install perl-Config-Simple
-shell> sudo yum install perl-Text-CSV
-shell> sudo yum install perl-REST-Client
-shell> sudo yum install perl-JSO
-shell> sudo yum install perl-LWP-Protocol-https
-shell> sudo yum install perl-DBI
-shell> sudo yum install perl-URI
-shell> sudo yum install perl-Pod-Usage
-shell> sudo yum install perl-Getopt-Long
+shell> sudo yum install perl-Config-Simple perl-Text-CSV perl-REST-Client perl-JSO perl-LWP-Protocol-https perl-DBI perl-URI perl-Pod-Usage perl-Getopt-Long
 ```
+- Ubuntu/Debian
+```
+shell> sudo apt install libconfig-simple-perl libtext-csv-perl librest-client-perl libjson-perl liblwp-protocol-https-perl libdbi-perl liburi-perl perl-doc libgetopt-long-descriptive-perl
+```
+
+
 Depending on the DBMS to be connected, additional packages might be required, e.g.
+- CentOS
 ```
 shell> sudo yum install perl-DBD-Pg
 shell> sudo yum install perl-DBD-MySQL
 shell> sudo yum install perl-DBD-ODBC
-
+```
+- Ubuntu/Debian
+```
+shell> sudo apt install libdbd-pg-perl
+shell> sudo apt install libdbd-mysql-perl
+shell> sudo apt install libdbd-odbc-perl
 ```
 
 ### Configuration
@@ -73,7 +79,11 @@ DBLimit     = "100"
 [Contact]
 Table        = "some_customer_user"
 Condition    = ""
+# use condition if you want to sync. only newer entries, e.g.
+# Condition    = " create_time > (current_timestamp - 86400)"
 Login        = "login"
+# use custom row name if a DB row should be used in multiple attributes
+# Login        = "email0 AS login"
 Email        = "email0"
 Firstname    = "first_name"
 Lastname     = "last_name"
@@ -102,7 +112,6 @@ Zip          = "addr_zip"
 Country      = "addr_country"
 Url          = "url"
 ValidID      = "SET:1"
-
 ```
 
 
