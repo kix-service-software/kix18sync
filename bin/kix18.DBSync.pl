@@ -168,15 +168,20 @@ $Config{KIXPassword}     = "";
 $Config{DBUser}          = "";
 $Config{DBPassword}      = "";
 
+# temporary workaround...
+$Config{OrgSearch}       = "";
+
 # read some params from command line...
 GetOptions (
-  "config=s"   => \$Config{ConfigFilePath},
-  "url=s"      => \$Config{KIXURL},
-  "u=s"        => \$Config{KIXUserName},
-  "p=s"        => \$Config{KIXPassword},
-  "ot=s"       => \$Config{ObjectType},
-  "verbose=i"  => \$Config{Verbose},
-  "help"       => \$Help,
+  "config=s"  => \$Config{ConfigFilePath},
+  "url=s"     => \$Config{KIXURL},
+  "u=s"       => \$Config{KIXUserName},
+  "p=s"       => \$Config{KIXPassword},
+  "ot=s"      => \$Config{ObjectType},
+  "verbose=i" => \$Config{Verbose},
+  # temporary workaround...
+  "orgsearch" => \$Config{OrgSearch},
+  "help"      => \$Help,
 );
 
 if( $Help ) {
@@ -342,7 +347,7 @@ else {
 
               if ( $OrgID{ID} ) {
                   $Data{PrimaryOrganisationID} = $OrgID{ID};
-                  $Data{OrganisationIDs} = \[$OrgID{ID}];
+                  $Data{OrganisationIDs} = [$OrgID{ID}];
               }
               else {
                   print STDOUT "$LineCount: no organization found for <"
@@ -525,7 +530,7 @@ sub _KIXAPIUpdateContact {
   };
 
   $Params{Client}->PATCH( "/api/v1/contacts/".$Params{Contact}->{ID},
-      encode("utf-8",to_json( $RequestBody ))
+      encode("utf-8", to_json( $RequestBody ))
   );
 
   #  update ok...
@@ -610,11 +615,16 @@ sub _KIXAPISearchOrg {
 
     my $Query = {};
     $Query->{Organisation}->{AND} =\@Conditions;
-    my @QueryParams = (
-      # enable following if GET /organisations supports "search"
-      #"search=".uri_escape( to_json( $Query)),
-      "filter=".uri_escape( to_json( $Query)),
-    );
+    my @QueryParams = qw{};
+
+    if( $Config{OrgSearch} ) {
+      @QueryParams =  ("search=".uri_escape( to_json( $Query)),);
+
+    }
+    else {
+        @QueryParams =  ("filter=".uri_escape( to_json( $Query)),);
+    }
+
     my $QueryParamStr = join( ";", @QueryParams);
 
     $Params{Client}->GET( "/api/v1/organisations?$QueryParamStr");
