@@ -91,21 +91,25 @@ Use ./bin/kix18.DBSync.pl --config ./config/kix18.DBSync.cfg --ot Contact|Organi
 --help show help message
 =cut
 
+=item
+--orgsearch enables org.-lookup by search (requires hotfix in KIX18-backend!)
+=cut
+
 =back
 
 
 =head1 REQUIREMENTS
 
-The script has been developed using CentOS8 as target plattform. Following packages must be installed (show for CentOS package names)
+The script has been developed using CentOS8 or Ubuntu/Debian as target plattform. Following packages must be installed:
 
 =over
 
 =item
-shell> sudo yum install perl-Config-Simple perl-Text-CSV perl-REST-Client perl-JSO perl-LWP-Protocol-https perl-DBI perl-URI perl-Pod-Usage perl-Getopt-Long
+shell> sudo yum install perl-Config-Simple perl-REST-Client perl-JSO perl-LWP-Protocol-https perl-DBI perl-URI perl-Pod-Usage perl-Getopt-Long
 =cut
 
 =item
-shell> sudo apt install libconfig-simple-perl libtext-csv-perl librest-client-perl libjson-perl liblwp-protocol-https-perl libdbi-perl liburi-perl perl-doc libgetopt-long-descriptive-perl
+shell> sudo apt install libconfig-simple-perl librest-client-perl libjson-perl liblwp-protocol-https-perl libdbi-perl liburi-perl perl-doc libgetopt-long-descriptive-perl perl-Text-CSV
 =cut
 
 

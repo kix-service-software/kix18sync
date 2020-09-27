@@ -1,0 +1,6 @@
+Number 	Name   	Comment	Street 	City   	Zip    	Country	Url    	ValidID
+ACME	A.C.M.E.	A Company Manufacturing Everything	123 Acme Lane	Springfield	98765	USA	http://www.acme.org	
+comX	Company X	Another Test Organization	Schönherrstr. 8	Chemnitz	12345	Germany	http:/someurl.here	
+comY	Company Y	üöäÜÖÄ	Schönherrstr. 8	Chemnitz	12345	Germany	http:/someurl.here	
+comZ	Company Z	üöäÜÖÄ	Schönherrstr. 8	Chemnitz	12345	Germany	http:/someurl.here	
+	Company A	üöäÜÖÄ	Schönherrstr. 8	Chemnitz	12345	Germany	http:/someurl.here	
