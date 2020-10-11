@@ -114,13 +114,6 @@ Comment      = "businessfnct"
 PrimaryOrgNo = "customer_id"
 ValidID      = "SET:1"
 
-# use custom row name if a DB row should be used in multiple attributes
-# Login        = "email0 AS login"
-# Login        = "login"             -- user creation not supported yet
-# IsAgent      = "SET:1"             -- user creation not supported yet
-# IsCustomer   = "SET:1"             -- user creation not supported yet
-# Roles        = "SET:Role1, Role2"  -- user creation not supported yet
-
 # Mapping configuration for organisation items...
 [Organisation]
 Table        = "some_org"
@@ -191,12 +184,60 @@ Depending on the object type, any CSV files matching name pattern from the input
 Most configuration has to be placed in a separate config file which is read upon script execution. A sample config might look like this:
 
 ```
-# KIXAPI configuration
 [KIXAPI]
 KIXUserName        = "API-User"
 KIXPassword        = "API-User-Password"
 KIXURL             = http://localhost:20000
 Proxy              = ""
 APITimeOut         = 30
+ObjectType         = ""
 
+# CSV configuration ...
+[CSV]
+RemoveSourceFile   = ""
+#CSVSeparator       = TAB
+CSVSeparator       = ";"
+CSVInputDir        = "/workspace/tools/kix18sync/sample"
+CSVOutputDir       = "/workspace/tools/kix18sync/sample"
+CSVEncoding        = "utf-8"
+#CSVQuote           = "none"
+CSVQuote           = "\""
+
+# Mapping configuration ...
+
+#Contact.Identifier            = "Email" - NOT YET IMPLEMENTED
+Contact.SearchColIndex        = "1"
+Contact.ColIndex.Login        = "0"
+Contact.ColIndex.Email        = "1"
+Contact.ColIndex.Firstname    = "2"
+Contact.ColIndex.Lastname     = "3"
+Contact.ColIndex.Title        = "4"
+Contact.ColIndex.Street       = "5"
+Contact.ColIndex.City         = "6"
+Contact.ColIndex.Zip          = "7"
+Contact.ColIndex.Country      = "8"
+Contact.ColIndex.Phone        = "9"
+Contact.ColIndex.Mobile       = "10"
+Contact.ColIndex.Fax          = "11"
+Contact.ColIndex.Comment      = "12"
+Contact.ColIndex.PrimaryOrgNo = "13"
+#Contact.ColIndex.ValidID      = "14"
+Contact.ColIndex.ValidID      = "SET:1"
+Contact.ColIndex.Password     = "15"
+Contact.ColIndex.Roles        = "16"
+#Contact.ColIndex.IsAgent      = "SET:1|0"
+Contact.ColIndex.IsAgent      = "17"
+#Contact.ColIndex.IsCustomer   = "SET:1|0"
+Contact.ColIndex.IsCustomer   = "18"
+
+Org.SearchColIndex    = "0"
+Org.ColIndex.Number   = "0"
+Org.ColIndex.Name     = "1"
+Org.ColIndex.Comment  = "2"
+Org.ColIndex.Street   = "3"
+Org.ColIndex.City     = "4"
+Org.ColIndex.Zip      = "5"
+Org.ColIndex.Country  = "6"
+Org.ColIndex.Url      = "7"
+Org.ColIndex.ValidID  = "SET:1"
 ```
