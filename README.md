@@ -56,7 +56,7 @@ The script can be used by referring to a configuration and object type only. Any
 - `p`: KIX user password
 - `du`: DBUser  (if not given by config)
 - `dp`: DBPassword (if not given by config)
-- `verbose`: makes the script verbose
+- `verbose`: makes the script verbose (use `--verbose 4` for max. verbosity)
 - `help`: show help message
 
 
@@ -99,9 +99,6 @@ Table        = "some_customer_user"
 Condition    = ""
 # use condition if you want to sync. only newer entries, e.g.
 # Condition    = " create_time > (current_timestamp - 86400)"
-Login        = "login"
-# use custom row name if a DB row should be used in multiple attributes
-# Login        = "email0 AS login"
 Email        = "email0"
 Firstname    = "first_name"
 Lastname     = "last_name"
@@ -116,6 +113,13 @@ Fax          = "fax1"
 Comment      = "businessfnct"
 PrimaryOrgNo = "customer_id"
 ValidID      = "SET:1"
+
+# use custom row name if a DB row should be used in multiple attributes
+# Login        = "email0 AS login"
+# Login        = "login"             -- user creation not supported yet
+# IsAgent      = "SET:1"             -- user creation not supported yet
+# IsCustomer   = "SET:1"             -- user creation not supported yet
+# Roles        = "SET:Role1, Role2"  -- user creation not supported yet
 
 # Mapping configuration for organisation items...
 [Organisation]
@@ -138,7 +142,10 @@ ValidID      = "SET:1"
 ----
 ## Sync from CSV-File - kix18.CSVSync.pl
 
-Script `bin/kix18.CSVSync.pl` provides a client for importing data from CSV files to KIX18 REST-API, supporting Contact and Organisation (so far).
+Script `bin/kix18.CSVSync.pl` provides a client for importing data from CSV files to KIX18 REST-API, supporting Contact (including user), Organisation and assets (...latter some day, not yet).
+
+Users are created/updated if a data for `Login` is given. Only then further columns such as `Password`, `Roles`, `IsAgent` and `IsCustomer` are considered at all. If there is no user context (`IsAgent` or  `IsCustomer`) set, the users account will be set to `invalid`.  `Roles` must contain **comma-separated names of roles** existing in your KIX. Only roles which match the given usage context (`IsAgent` or  `IsCustomer`) are accepted. Predefined default roles `Agent User` or `Customer` are added automatically by the script depending on the users context (hopefully no one renamed them). Non-existing or misspelled **roles will not be created.**
+
 
 ### Required Perl Packages
 
@@ -164,14 +171,16 @@ The script can be used by referring to a configuration and object type only. Any
 - `url`: URL to KIX backend API (e.g. https://t12345-api.kix.cloud)
 - `u`: KIX user login
 - `p`: KIX user password
-- `verbose`: makes the script verbose
+- `verbose`: makes the script verbose (use `--verbose 4` for max. verbosity)
 - `help`: show help message
 - `i`: source directory from which CSV-files matching name patterns fpr object type are read
 - `if`: source file for import (if given, option `i` is ignored)
 - `o`: destination directory, where result summary is written
 - `r`: if set, import files are deleted after processing
+- `fpw`: if set, an updated user will get the password specified by the import data
 
-Depending on the object type, any CSV files matching name pattern from the input directory are read. Files containing `Result` are ommited. For each import file a `SourceFileName.Result.csv` is written. Name patterns are ignored if a specific file name is given.
+
+Depending on the object type, any CSV files matching name pattern from the input directory are read. Files containing `Result` are omitted. For each import file a `SourceFileName.Result.csv` is written. Name patterns are ignored if a specific file name is given.
 
 - object type `Asset`: name pattern `*Asset*.csv`
 - object type `Contact`: name pattern `*Contact*.csv`
@@ -179,7 +188,7 @@ Depending on the object type, any CSV files matching name pattern from the input
 
 ### Configuration
 
-The major configuration has to be placed in a separate config file which is read upon script execution. A sample config might look like this:
+Most configuration has to be placed in a separate config file which is read upon script execution. A sample config might look like this:
 
 ```
 # KIXAPI configuration

@@ -90,6 +90,10 @@ Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
 =cut
 
 =item
+--fpw: flag, force password reset on user update
+=cut
+
+=item
 --r: flag, set to remove source file after being processed
 =cut
 
@@ -145,10 +149,13 @@ GetOptions (
   "i=s"        => \$Config{CSVInputDir},
   "if=s"       => \$Config{CSVInputFile},
   "o=s"        => \$Config{CSVOutputDir},
+  "fpw"        => \$Config{ForcePwReset},
   "r"          => \$Config{RemoveSourceFile},
   "verbose=i"  => \$Config{Verbose},
+
   # temporary workaround...
   "orgsearch"  => \$Config{OrgSearch},
+
   "help"       => \$Help,
 );
 
@@ -220,6 +227,7 @@ if ( $Config{ObjectType} eq 'Asset') {
     { %Config, Client => $KIXClient, Class => 'ITSM::ConfigItem::Class'}
   );
 
+
   # lookup deployment states...
   my %DeplStateList = _KIXAPIGeneralCatalogList(
     { %Config, Client => $KIXClient, Class => 'ITSM::ConfigItem::DeploymentState'}
@@ -230,12 +238,18 @@ if ( $Config{ObjectType} eq 'Asset') {
     { %Config, Client => $KIXClient, Class => 'ITSM::Core::IncidentState'}
   );
 
-  print STDERR "\nAsset import not supported yet - aborting.\n\n";
+  print STDERR "\nAsset import not supported (yet) - aborting.\n\n";
   pod2usage( -verbose => 1);
   exit(-1)
 
 }
 elsif ( $Config{ObjectType} eq 'Contact') {
+
+
+  # lookup permission roles...
+  my %RoleList = _KIXAPIRoleList(
+    { %Config, Client => $KIXClient}
+  );
 
   # process import lines
   for my $CurrFile ( keys( %{$CSVDataRef}) ) {
@@ -250,6 +264,152 @@ elsif ( $Config{ObjectType} eq 'Contact') {
         next;
       }
 
+      # ------------------------------------------------------------------------
+      # handle user account
+      my $ContactUserID = "";
+      if( $CurrLine->[$Config{'Contact.ColIndex.Login'}] ) {
+
+          # extract role names
+          my $RolesStrg = $CurrLine->[$Config{'Contact.ColIndex.Roles'}];
+          my @RoleArr = split( ',', $RolesStrg );
+
+          # get IsAgent/-Customer values...
+          my $IsAgent    =  "0";
+          my $IsCustomer =  "0";
+          if( $Config{'Contact.ColIndex.IsAgent'} =~/^SET\:(.+)/) {
+            $IsAgent = $1 || "0";
+          }
+          else {
+            $IsAgent = $CurrLine->[$Config{'Contact.ColIndex.IsAgent'}] || "0";
+          }
+
+          if( $Config{'Contact.ColIndex.IsCustomer'} =~/^SET\:(.+)/) {
+            $IsCustomer = $1 || "0";
+          }
+          else{
+            $IsCustomer =  $CurrLine->[$Config{'Contact.ColIndex.IsCustomer'}] || "0";
+          }
+
+          # assign default roles based on IsAgent/IsCustomer status...
+          push( @RoleArr, 'Agent User') if( $IsAgent );
+          push( @RoleArr, 'Customer') if( $IsCustomer );
+
+          # get role ids for user...
+          my @RoleIDsArr = qw{};
+          ROLENAME:
+          for my $CurrRoleName ( @RoleArr ) {
+              next ROLENAME if( !$RoleList{$CurrRoleName});
+              next ROLENAME if( !$RoleList{$CurrRoleName}->{ID} );
+
+              # skip role if not fitting IsAgent/IsCustomer status...
+              next ROLENAME if( !$IsAgent && !$IsCustomer);
+              next ROLENAME if( $IsAgent && !$IsCustomer
+                  && !$RoleList{$CurrRoleName}->{Agent}
+                  && $RoleList{$CurrRoleName}->{Customer}
+              );
+              next ROLENAME if( !$IsAgent && $IsCustomer
+                  && $RoleList{$CurrRoleName}->{Agent}
+                  && !$RoleList{$CurrRoleName}->{Customer}
+              );
+              push( @RoleIDsArr, $RoleList{$CurrRoleName}->{ID} ) ;
+          }
+
+          # set user invalid if neither Agent nor Customer...
+          my $IsValidUser = $IsAgent || $IsCustomer || '2';
+
+          # set user password...
+          # TO DO - generate some pw if not given...
+          my $UserPw = $CurrLine->[$Config{'Contact.ColIndex.Password'}] || 'Passw0rd!';
+
+          # build data hash
+          my %User = (
+              UserLogin  => $CurrLine->[$Config{'Contact.ColIndex.Login'}],
+              ValidID    => $IsValidUser,
+              IsAgent    => $IsAgent,
+              IsCustomer => $IsCustomer,
+          );
+          if( scalar(@RoleIDsArr) ) {
+            $User{RolesIDs} = \@RoleIDsArr;
+          }
+          for my $CurrKey ( keys(%User) ) {
+              $User{$CurrKey} = undef if( !length($User{$CurrKey}) );
+          }
+
+          # search user...
+          my %SearchResult = _KIXAPISearchUser({
+            %Config,
+            Client      => $KIXClient,
+            SearchValue => $CurrLine->[$Config{'Contact.ColIndex.Login'}] || '',
+          });
+          # handle errors...
+          if ( $SearchResult{Msg} ) {
+            push( @{$CurrLine}, 'ERROR');
+            push( @{$CurrLine}, $SearchResult{Msg});
+          }
+
+          # update existing user...
+          elsif ( $SearchResult{ID} ) {
+            $ContactUserID = $SearchResult{ID};
+
+            if( $Config{ForcePwReset} ) {
+                $User{UserPw} = $UserPw;
+            }
+            $User{ID} = $SearchResult{ID};
+            my $UserID = _KIXAPIUpdateUser(
+              { %Config, Client => $KIXClient, User => \%User }
+            );
+
+            if( !$UserID) {
+              push( @{$CurrLine}, 'ERROR');
+              push( @{$CurrLine}, 'user update failed.');
+            }
+            elsif ( $UserID == 1 ) {
+              push( @{$CurrLine}, 'no user update required');
+              push( @{$CurrLine}, $SearchResult{Msg});
+            }
+            else {
+              push( @{$CurrLine}, 'user updated');
+              push( @{$CurrLine}, $SearchResult{Msg});
+            }
+
+            print STDOUT "$LineCount: Updated user <$UserID> for <Login "
+              . $User{UserLogin}. ">.\n"
+            if( $Config{Verbose} > 2);
+
+
+          }
+          # create new user...
+          else {
+            $User{UserPw} = $UserPw;
+            my $NewUserID = _KIXAPICreateUser(
+              { %Config, Client => $KIXClient, User => \%User }
+            ) || '';
+            $ContactUserID = $NewUserID;
+
+            if ( $NewUserID ) {
+              push( @{$CurrLine}, 'user created');
+              push( @{$CurrLine}, $SearchResult{Msg});
+            }
+            else {
+              push( @{$CurrLine}, 'ERROR');
+              push( @{$CurrLine}, 'user create failed.');
+            }
+
+            print STDOUT "$LineCount: Created user <$NewUserID> for <Login "
+              . $User{UserLogin}. ">.\n"
+            if( $Config{Verbose} > 2);
+          }
+
+
+
+      }
+      else {
+          # no contact created/updated...
+          push( @{$CurrLine}, '');
+      }
+
+      # ------------------------------------------------------------------------
+      # handle contact
       if( !$CurrLine->[$Config{'Contact.SearchColIndex'}] ) {
         push( @{$CurrLine}, 'ERROR');
         push( @{$CurrLine}, 'Identifier missing.');
@@ -276,6 +436,14 @@ elsif ( $Config{ObjectType} eq 'Contact') {
         }
       }
 
+      my $ContactValidId = 1;
+      if( $Config{'Contact.ColIndex.ValidID'} =~/^SET\:(.+)/) {
+        $ContactValidId = $1;
+      }
+      else {
+        $ContactValidId = $CurrLine->[$Config{'Contact.ColIndex.ValidID'}];
+      }
+
       my %Contact = (
           City            => $CurrLine->[$Config{'Contact.ColIndex.City'}],
           Comment         => $CurrLine->[$Config{'Contact.ColIndex.Comment'}],
@@ -289,16 +457,25 @@ elsif ( $Config{ObjectType} eq 'Contact') {
           Phone           => $CurrLine->[$Config{'Contact.ColIndex.Phone'}],
           Street          => $CurrLine->[$Config{'Contact.ColIndex.Street'}],
           Title           => $CurrLine->[$Config{'Contact.ColIndex.Title'}],
-          ValidID         => $CurrLine->[$Config{'Contact.ColIndex.ValidID'}],
+          ValidID         => $ContactValidId,
           Zip             => $CurrLine->[$Config{'Contact.ColIndex.Zip'}],
       );
 
+      # assign user login if given...
+      if( $ContactUserID ) {
+          $Contact{AssignedUserID} = $ContactUserID;
+      }
+
+      # cleanup empty values...
+      for my $CurrKey ( keys(%Contact) ) {
+          $Contact{$CurrKey} = undef if( !length($Contact{$CurrKey}) );
+      }
 
       if( $OrgID ) {
         my @OrgIDs = ();
         push( @OrgIDs, $OrgID);
         $Contact{OrganisationIDs} = \@OrgIDs;
-        $Contact{PrimaryOrganisationID} = $OrgID;        
+        $Contact{PrimaryOrganisationID} = $OrgID;
       }
 
       # search contact...
@@ -362,6 +539,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
       }
 
       $LineCount++;
+
     }
   }
 
@@ -388,6 +566,14 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
         next;
       }
 
+      my $ValidId = 1;
+      if( $Config{'Org.ColIndex.ValidID'} =~/^SET\:(.+)/) {
+        $ValidId = $1;
+      }
+      else {
+        $ValidId = $CurrLine->[$Config{'Org.ColIndex.ValidID'}];
+      }
+
       my %Organization = (
           City            => $CurrLine->[$Config{'Org.ColIndex.City'}],
           Number   => $CurrLine->[$Config{'Org.ColIndex.Number'}],
@@ -398,10 +584,15 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
           Zip      => $CurrLine->[$Config{'Org.ColIndex.Zip'}],
           Country  => $CurrLine->[$Config{'Org.ColIndex.Country'}],
           Url      => $CurrLine->[$Config{'Org.ColIndex.Url'}],
-          ValidID  => $CurrLine->[$Config{'Org.ColIndex.ValidID'}],
+          ValidID  => $ValidId,
       );
 
-      # search organisation...
+      # cleanup empty values...
+      for my $CurrKey ( keys(%Organization) ) {
+          $Organization{$CurrKey} = undef if( !length($Organization{$CurrKey}) );
+      }
+
+      # search organization...
       my %SearchResult = _KIXAPISearchOrg({
         %Config,
         Client      => $KIXClient,
@@ -791,10 +982,172 @@ sub _KIXAPICreateOrg {
 
 
 
+#-------------------------------------------------------------------------------
+# CONTACT HANDLING FUNCTIONS KIX-API
+sub _KIXAPIRoleList {
+
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+
+  $Params{Client}->GET( "/api/v1/system/roles");
+
+  if( $Client->responseCode() ne "200") {
+    print STDERR "\nSearch for roles failed (Response ".$Client->responseCode().")!\n";
+    exit(-1);
+  }
+  else {
+    my $Response = from_json( $Client->responseContent() );
+    for my $CurrItem ( @{$Response->{Role}}) {
+
+      my %RoleData = ();
+      if( $CurrItem->{UsageContextList}
+          && ref($CurrItem->{UsageContextList}) eq 'ARRAY')
+      {
+        %RoleData = map { $_ => 1 } @{$CurrItem->{UsageContextList}};
+      }
+      $RoleData{ID} = $CurrItem->{ItemID};
+
+      $Result{ $CurrItem->{Name} } = \%RoleData;
+    }
+    # RoleName => {
+    #   ID       => 123, # required
+    #   Agent    => 1,   # optional
+    #   Customer => 1,   # optional
+    # }
+
+  }
+
+  return %Result;
+}
+
+
+
+
+sub _KIXAPISearchUser {
+
+    my %Params = %{$_[0]};
+    my %Result = (
+       ID => 0,
+       Msg => ''
+    );
+    my $Client = $Params{Client};
+
+    my @ResultItemData = qw{};
+    my @Conditions = qw{};
+
+    my $IdentAttr  = $Params{Identifier} || "";
+    my $IdentStrg  = $Params{SearchValue} || "";
+
+    print STDOUT "Search user by UserLogin EQ '$IdentStrg'"
+      .".\n" if( $Config{Verbose} > 3);
+
+    push( @Conditions,
+      {
+        "Field"    => "UserLogin",
+        "Operator" => "EQ",
+        "Type"     => "STRING",
+        "Value"    => $IdentStrg
+      }
+    );
+
+    my $Query = {};
+    $Query->{User}->{AND} =\@Conditions;
+    my @QueryParams = (
+      "search=".uri_escape( to_json( $Query)),
+    );
+    my $QueryParamStr = join( ";", @QueryParams);
+
+    $Params{Client}->GET( "/api/v1/system/users?$QueryParamStr");
+
+    if( $Client->responseCode() ne "200") {
+      $Result{Msg} = "Search for users failed (Response ".$Client->responseCode().")!";
+    }
+    else {
+      my $Response = from_json( $Client->responseContent() );
+      if( scalar(@{$Response->{User}}) > 1 ) {
+        $Result{Msg} = "More than on item found for identifier.";
+      }
+      elsif( scalar(@{$Response->{User}}) == 1 ) {
+        $Result{ID} = $Response->{User}->[0]->{UserID};
+      }
+    }
+
+   return %Result;
+}
+
+
+sub _KIXAPIUpdateUser {
+
+  my %Params = %{$_[0]};
+  my $Result = 0;
+
+  $Params{User}->{ValidID} = $Params{User}->{ValidID} || 1;
+
+  my $RequestBody = {
+    "User" => {
+        %{$Params{User}}
+    }
+  };
+
+  $Params{Client}->PATCH(
+      "/api/v1/system/users/".$Params{User}->{ID},
+      encode("utf-8",to_json( $RequestBody ))
+  );
+
+  #  update ok...
+  if( $Params{Client}->responseCode() eq "200") {
+    my $Response = from_json( $Params{Client}->responseContent() );
+    $Result = $Response->{UserID};
+  }
+  else {
+    print STDERR "Updating user failed (Response ".$Params{Client}->responseCode().")!";
+    print STDERR "\ndata submitted: ".Dumper($RequestBody)."\n";
+
+  }
+
+  return $Result;
+
+}
+
+
+sub _KIXAPICreateUser {
+
+  my %Params = %{$_[0]};
+  my $Result = 0;
+
+  $Params{User}->{ValidID} = $Params{User}->{ValidID} || 1;
+
+  my $RequestBody = {
+    "User" => {
+        %{$Params{User}}
+    }
+  };
+  $Params{Client}->POST(
+      "/api/v1/system/users",
+      encode("utf-8", to_json( $RequestBody ))
+  );
+
+  if( $Params{Client}->responseCode() ne "201") {
+    print STDERR "\nCreating user failed (Response ".$Params{Client}->responseCode().")!";
+    print STDERR "\ndata submitted: ".Dumper($RequestBody)."\n";
+
+    $Result = 0;
+  }
+  else {
+    my $Response = from_json( $Params{Client}->responseContent() );
+    $Result = $Response->{UserID};
+  }
+
+  return $Result;
+
+}
+
+
 
 #-------------------------------------------------------------------------------
 # ASSET HANDLING FUNCTIONS KIX-API
-sub _KIXAPISearchAsset {
+sub _KIXXAPISearchAsset {
 
     my %Params = %{$_[0]};
     my %Result = (
@@ -1115,9 +1468,6 @@ sub _WriteResult {
     }
 
   }
-
-
-
 
 }
 
