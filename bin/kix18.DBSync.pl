@@ -88,6 +88,10 @@ Use ./bin/kix18.DBSync.pl --config ./config/kix18.DBSync.cfg --ot Contact|Organi
 =cut
 
 =item
+--nossl disables SSL verification on backend connect
+=cut
+
+=item
 --help show help message
 =cut
 
@@ -151,6 +155,7 @@ GetOptions (
   "u=s"       => \$Config{KIXUserName},
   "p=s"       => \$Config{KIXPassword},
   "ot=s"      => \$Config{ObjectType},
+  "nossl"     => \$Config{NoSSLVerify},
   "verbose=i" => \$Config{Verbose},
   # temporary workaround...
   "orgsearch" => \$Config{OrgSearch},
@@ -407,6 +412,12 @@ sub _KIXAPIConnect {
     timeout => $Config{APITimeOut} || 15,
   );
   $Client->getUseragent()->proxy(['http','https'], $Config{Proxy});
+
+  if( $Config{NoSSLVerify} ) {
+    $Client->getUseragent()->ssl_opts(verify_hostname => 0);
+    $Client->getUseragent()->ssl_opts(SSL_verify_mode => 0);
+  }
+
   $Client->POST(
       "/api/v1/auth",
       to_json( $RequestBody ),
