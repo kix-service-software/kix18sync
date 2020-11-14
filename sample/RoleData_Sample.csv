@@ -1,0 +1,192 @@
+"Role Name";"Usage Context";"Role Comment";Valid;"Permission Type";Target;"Permission Comment";CREATE;READ;UPDATE;DELETE;DENY
+"Agent User";Agent;;valid;Resource;/auth;;C;-;-;-;-
+"Agent User";Agent;;valid;Resource;/system/generalcatalog;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/communication;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/communication/*;;-;-;-;-;-
+"Agent User";Agent;;valid;Resource;/system/communication/notifications;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/dynamicfields;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/watchers;;C;R;U;D;-
+"Agent User";Agent;;valid;Resource;/i18n;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/objectactions/6;"Permission for Action with id 6.";-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/templates/7;"Permission for Action with id 6.";-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/session;;C;R;U;D;-
+"Agent User";Agent;;valid;Object;"/system/config/*{SysConfigOption.AccessLevel EQ confidential}";;-;-;-;-;-
+"Agent User";Agent;;valid;Object;"/system/config/definitions/*{SysConfigOptionDefinition.AccessLevel EQ confidential}";;-;-;-;-;-
+"Agent User";Agent;;valid;Resource;/system;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/*;;-;-;-;-;-
+"Agent User";Agent;;valid;Resource;/system/users;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/config;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/objectdefinitions;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/valid;;-;R;-;-;-
+"Agent User";Agent;;valid;Resource;/system/objecticons;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/auth;;C;-;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/tickets;;C;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/session;;C;R;U;D;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/system/ticket/templates/;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/system/ticket/templates/*;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/faq;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/faq/*;;-;-;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/faq/articles;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;"/faq/articles/*{FAQArticle.CustomerVisible EQ 1}";;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/faq/articles/*/votes;;C;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/i18n;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/news;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/news/*;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Object;"/tickets/*/articles{Article.SenderTypeID NE 3}";;-;-;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Object;"/tickets/*/articles/*{Article.SenderTypeID NE 3}";;-;-;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/system/config;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Resource;/system/config/*;;-;R;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Object;"/system/config{SysConfigOption.AccessLevel NE external}";;-;-;-;-;-
+"Anonymous Self Service Portal User";Customer;;valid;Object;"/system/config/*{SysConfigOption.AccessLevel NE external}";;-;-;-;-;-
+"Asset Maintainer";Agent;;valid;Resource;/system/cmdb;;-;R;-;-;-
+"Asset Maintainer";Agent;;valid;Resource;/system/cmdb/*;;-;-;-;-;-
+"Asset Maintainer";Agent;;valid;Resource;/system/cmdb/classes;;-;R;-;-;-
+"Asset Maintainer";Agent;;valid;Resource;/cmdb;;C;R;U;D;-
+"Asset Maintainer";Agent;;valid;Resource;/cmdb/*;;-;-;-;-;-
+"Asset Maintainer";Agent;;valid;Resource;/cmdb/configitems;;C;R;U;D;-
+"Asset Maintainer";Agent;;valid;Resource;/links;;C;R;U;D;-
+"Asset Reader";Agent;;valid;Resource;/system/cmdb;;-;R;-;-;-
+"Asset Reader";Agent;;valid;Resource;/system/cmdb/*;;-;-;-;-;-
+"Asset Reader";Agent;;valid;Resource;/system/cmdb/classes;;-;R;-;-;-
+"Asset Reader";Agent;;valid;Resource;/cmdb;;-;R;-;-;-
+"Asset Reader";Agent;;valid;Resource;/cmdb/*;;-;-;-;-;-
+"Asset Reader";Agent;;valid;Resource;/cmdb/configitems;;-;R;-;-;-
+"Asset Reader";Agent;;valid;Resource;/links;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/session;;C;R;U;D;-
+Customer;Customer;;valid;Resource;/system;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/*;;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/cmdb;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/cmdb/*;;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/cmdb/classes;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/communication;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/communication/*;;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/communication/channels;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/communication/notifications;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/communication/sendertypes;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/communication/systemaddresses;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/faq;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/faq/*;;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/faq/categories;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/ticket;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/users;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/tickets;;C;R;-;-;-
+Customer;Customer;;valid;Resource;/tickets/*;;-;R;U;-;-
+Customer;Customer;;valid;Object;"/tickets{Ticket.ContactID NE $CurrentUser.Contact.ID && Ticket.OrganisationID NE $CurrentUser.Contact.PrimaryOrganisationID}";;-;-;-;-;-
+Customer;Customer;;valid;Object;"/tickets/*{Ticket.ContactID NE $CurrentUser.Contact.ID && Ticket.OrganisationID NE $CurrentUser.Contact.PrimaryOrganisationID}";;-;-;-;-;-
+Customer;Customer;;valid;Resource;/tickets/*/articles;;C;R;-;-;-
+Customer;Customer;;valid;Resource;/tickets/*/articles/*;;-;R;-;-;-
+Customer;Customer;;valid;Object;"/tickets/*/articles/*{Article.CustomerVisible NE 1}";;-;-;-;-;-
+Customer;Customer;;valid;Property;/tickets/*/articles/*{Article.[*,!Bcc,!BccRealname]};;-;R;-;-;-
+Customer;Customer;;valid;Resource;/tickets/*/articles/*/flags;;C;R;-;-;-
+Customer;Customer;;valid;Resource;/system/config;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/config/*;;-;R;-;-;-
+Customer;Customer;;valid;Object;"/system/config{SysConfigOption.AccessLevel NE external}";;-;-;-;-;-
+Customer;Customer;;valid;Object;"/system/config/*{SysConfigOption.AccessLevel NE external}";;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/objecticons;;-;R;-;-;-
+Customer;Customer;;valid;Object;"/system/ticket/templates/*{TicketTemplate.CustomerVisible NE 1}";;-;-;-;-;-
+Customer;Customer;;valid;Object;"/system/templates/*{Template.CustomerVisible NE 1}";;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/templates;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/templates/*;;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/templates/1;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/templates/2;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/templates/3;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/objectactions;;-;R;-;-;-
+Customer;Customer;;valid;Object;"/system/objectactions/*{ObjectAction.UsageContext NE 2 && ObjectAction.UsageContext 3}";;-;-;-;-;-
+Customer;Customer;;valid;Resource;/system/templates/6;"Permission for Action with id 5.";-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/objectactions/5;"Permission for Action with id 5.";-;R;-;-;-
+Customer;Customer;;valid;Property;/tickets/*{Ticket.[TicketNumber,Age,Articles,Changed,ContactID,Created,CreateTimeUnix,DynamicFields,OrganisationID,PriorityID,QueueID,StateID,TypeID]};;-;R;-;-;-
+Customer;Customer;;valid;Resource;/auth;;C;-;-;-;-
+Customer;Customer;;valid;Resource;/cmdb;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/contacts;;C;R;-;-;-
+Customer;Customer;;valid;Resource;/faq;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/faq/*;;-;-;-;-;-
+Customer;Customer;;valid;Resource;/faq/articles;;-;R;-;-;-
+Customer;Customer;;valid;Object;"/faq/articles/*{FAQArticle.CustomerVisible NE 1}";;-;-;-;-;-
+Customer;Customer;;valid;Resource;/faq/articles/*/votes;;C;R;-;-;-
+Customer;Customer;;valid;Resource;/i18n;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/links;;-;R;-;-;-
+"Customer Manager";Agent;;valid;Resource;/organisations;;C;R;U;D;-
+"Customer Manager";Agent;;valid;Resource;/contacts;;C;R;U;D;-
+"Customer Reader";Agent;;valid;Resource;/organisations;;-;R;-;-;-
+"Customer Reader";Agent;;valid;Resource;/contacts;;-;R;-;-;-
+"FAQ Editor";Agent;;valid;Resource;/system/faq;;-;R;-;-;-
+"FAQ Editor";Agent;;valid;Resource;/system/faq/*;;-;-;-;-;-
+"FAQ Editor";Agent;;valid;Resource;/system/faq/categories;;-;R;-;-;-
+"FAQ Editor";Agent;;valid;Resource;/faq;;C;R;U;D;-
+"FAQ Editor";Agent;;valid;Resource;/faq/*;;-;-;-;-;-
+"FAQ Editor";Agent;;valid;Resource;/faq/articles;;C;R;U;D;-
+"FAQ Editor";Agent;;valid;Resource;/links;;C;R;U;D;-
+"FAQ Reader";Agent;;valid;Resource;/system/faq;;-;R;-;-;-
+"FAQ Reader";Agent;;valid;Resource;/system/faq/*;;-;-;-;-;-
+"FAQ Reader";Agent;;valid;Resource;/system/faq/categories;;-;R;-;-;-
+"FAQ Reader";Agent;;valid;Resource;/faq;;-;R;-;-;-
+"FAQ Reader";Agent;;valid;Resource;/faq/*;;-;-;-;-;-
+"FAQ Reader";Agent;;valid;Resource;/faq/articles;;-;R;-;-;-
+"FAQ Reader";Agent;;valid;Resource;/faq/articles/*/votes;;C;R;U;D;-
+"FAQ Reader";Agent;;valid;Resource;/links;;-;R;-;-;-
+Superuser;Agent;;valid;Object;/*{};;C;R;U;D;-
+Superuser;Agent;;valid;Property;/*{};;C;R;U;D;-
+Superuser;Agent;;valid;Resource;/*;;C;R;U;D;-
+"System Admin";Agent;;valid;Resource;/auth;;C;-;-;-;-
+"System Admin";Agent;;valid;Resource;/session;;C;R;U;D;-
+"System Admin";Agent;;valid;Resource;/contacts;;C;R;U;-;-
+"System Admin";Agent;;valid;Resource;/organisations;;-;R;-;-;-
+"System Admin";Agent;;valid;Object;/*{};;C;R;U;D;-
+"System Admin";Agent;;valid;Property;/*{};;C;R;U;D;-
+"System Admin";Agent;;valid;Resource;/system;;C;R;U;D;-
+"Ticket Agent";Agent;;valid;Resource;/system/textmodules;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/*;;-;-;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/objectactions;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/objectactions/*;;-;-;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/automation;;-;R;U;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/automation/*;;-;-;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/automation/macros;;-;-;U;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/automation/macros/*;;-;-;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/objectactions/2;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/objectactions/3;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/4;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/objectactions/4;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/5;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/slas;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/objectactions/6;"Permission for Action with id 6.";-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/7;"Permission for Action with id 6.";-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/tickets;;C;R;U;D;-
+"Ticket Agent";Agent;;valid;Resource;/system/ticket/*;;-;-;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/ticket;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/ticket/locks;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/ticket/priorities;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/ticket/queues;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/ticket/states;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/ticket/types;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/communication;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/communication/*;;-;-;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/communication/channels;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/communication/sendertypes;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/communication/systemaddresses;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/organisations;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/contacts;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/links;;C;R;U;D;-
+"Ticket Creator";Agent;;valid;Resource;/tickets;;C;-;-;-;-
+"Ticket Creator";Agent;;valid;Resource;/system/ticket;;-;R;-;-;-
+"Ticket Creator";Agent;;valid;Resource;/system/communication;;-;R;-;-;-
+"Ticket Creator";Agent;;valid;Resource;/system/communication/*;;-;-;-;-;-
+"Ticket Creator";Agent;;valid;Resource;/system/communication/channels;;-;R;-;-;-
+"Ticket Creator";Agent;;valid;Resource;/system/communication/sendertypes;;-;R;-;-;-
+"Ticket Creator";Agent;;valid;Resource;/system/communication/systemaddresses;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/tickets;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/tickets/*/articles/*/flags;;C;R;U;D;-
+"Ticket Reader";Agent;;valid;Resource;/system/slas;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/ticket/*;;-;-;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/ticket;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/ticket/locks;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/ticket/priorities;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/ticket/queues;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/ticket/states;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/ticket/types;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/communication;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/communication/*;;-;-;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/communication/channels;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/communication/sendertypes;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/communication/systemaddresses;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/links;;-;R;-;-;-
