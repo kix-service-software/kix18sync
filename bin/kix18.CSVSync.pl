@@ -102,6 +102,10 @@ Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
 =cut
 
 =item
+--nossl disables SSL verification on backend connect
+=cut
+
+=item
 --help show help message
 =cut
 
@@ -151,6 +155,7 @@ GetOptions (
   "o=s"        => \$Config{CSVOutputDir},
   "fpw"        => \$Config{ForcePwReset},
   "r"          => \$Config{RemoveSourceFile},
+  "nossl"      => \$Config{NoSSLVerify},
   "verbose=i"  => \$Config{Verbose},
 
   # temporary workaround...
@@ -694,6 +699,12 @@ sub _KIXAPIConnect {
     timeout => $Config{APITimeOut} || 15,
   );
   $Client->getUseragent()->proxy(['http','https'], $Config{Proxy});
+
+  if( $Config{NoSSLVerify} ) {
+    $Client->getUseragent()->ssl_opts(verify_hostname => 0);
+    $Client->getUseragent()->ssl_opts(SSL_verify_mode => 0);
+  }
+
   $Client->POST(
       "/api/v1/auth",
       to_json( $RequestBody ),
