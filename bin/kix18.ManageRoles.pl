@@ -48,7 +48,10 @@ use JSON;
 
 This script retrieves role and permission infomation from a KIX18 by communicating with its REST-API.
 
-Use kix18.ManageRoles.pl  --config ./sample/kix18.ManageRoles.cfg --help [other options]
+Examples
+kix18.ManageRoles.pl --help
+kix18.ManageRoles.pl --config ./config/kix18.ManageRoles.cfg --dir export -d /tmp
+kix18.ManageRoles.pl --config ./config/kix18.ManageRoles.cfg --dir import --f ./sample/RoleData_Sample.csv --verbose 2
 
 
 =head1 OPTIONS
@@ -56,7 +59,7 @@ Use kix18.ManageRoles.pl  --config ./sample/kix18.ManageRoles.cfg --help [other 
 =over
 
 =item
---dir: direction (import|export), export if not given
+--dir: direction (import|export), "export" if not given
 =cut
 
 =item
@@ -76,7 +79,11 @@ Use kix18.ManageRoles.pl  --config ./sample/kix18.ManageRoles.cfg --help [other 
 =cut
 
 =item
---f: input file
+--d: output directory to which role permissions are written (if direction "export")
+=cut
+
+=item
+--f: input file (if direction "import")
 =cut
 
 =item
@@ -94,11 +101,21 @@ Use kix18.ManageRoles.pl  --config ./sample/kix18.ManageRoles.cfg --help [other 
 
 The script has been developed using CentOS8 or Ubuntu as target plattform. Following packages must be installed
 
+=head2 CentOS8
+
 =over
 
 =item
 shell> sudo yum install perl-Config-Simple perl-REST-Client perl-JSO perl-LWP-Protocol-https perl-DBI perl-URI perl-Pod-Usage perl-Getopt-Long  libtext-csv-perl
 =cut
+
+=back
+
+=cut
+
+=head2 Ubuntu
+
+=over
 
 =item
 shell> sudo apt install libconfig-simple-perl librest-client-perl libjson-perl liblwp-protocol-https-perl libdbi-perl liburi-perl perl-doc libgetopt-long-descriptive-perl
@@ -119,14 +136,15 @@ $Config{KIXPassword}       = "";
 
 # read some params from command line...
 GetOptions (
-  "config=s"   => \$Config{ConfigFilePath},
-  "url=s"      => \$Config{KIXURL},
-  "u=s"        => \$Config{KIXUserName},
-  "p=s"        => \$Config{KIXPassword},
-  "dir=s"      => \$Config{Direction},
-  "f=s"        => \$Config{CSVFile},
-  "verbose=i"  => \$Config{Verbose},
-  "help"       => \$Help,
+  "config=s"  => \$Config{ConfigFilePath},
+  "url=s"     => \$Config{KIXURL},
+  "u=s"       => \$Config{KIXUserName},
+  "p=s"       => \$Config{KIXPassword},
+  "dir=s"     => \$Config{Direction},
+  "d=s"       => \$Config{CSVOutputDir},
+  "f=s"       => \$Config{CSVFile},
+  "verbose=i" => \$Config{Verbose},
+  "help"      => \$Help,
 );
 
 if( $Help ) {
@@ -247,6 +265,8 @@ if ( $Config{Direction} eq 'import') {
       $CurrRP{'DENY'}         = $CurrRolePerm->[11];
 
       # get UsageContextID
+      # Agent    == 1
+      # Customer == 2
       if( $CurrRP{'UsageContext'} eq 'Agent') {
           $CurrRP{'UsageContextID'} = 1;
       }
@@ -280,6 +300,9 @@ if ( $Config{Direction} eq 'import') {
 
       # lookup permission type id...
       $CurrRP{'TypeID'} = $PermTypeList{ $CurrRP{'PermType'} } || '';
+      if(!$CurrRP{'TypeID'} ) {
+
+      }
 
       # if another role than before...
       if( $PrevRole{Name} ne $CurrRP{'Name'} ) {
@@ -332,11 +355,14 @@ if ( $Config{Direction} eq 'import') {
           for my $CurrExistPerm ( @{$RoleList{$CurrRP{'Name'}}->{Permissions}} ) {
 
               if( $CurrExistPerm->{ID} && $CurrRP{'ID'} ) {
-                  _KIXAPIRoleDeletePermission(  { %Config,
+                  my $RemoveOK = _KIXAPIRoleDeletePermission(  { %Config,
                     Client => $KIXClient,
                     RoleID => $CurrRP{'ID'},
                     PermID => $CurrExistPerm->{ID},
                   });
+
+                  next LINE if(!$RemoveOK);
+
               }
           }
           print STDOUT "\n\tRemoved all existing permissions for role <"
@@ -612,7 +638,7 @@ sub _KIXAPIRoleDeletePermission {
 
   if( $Client->responseCode() ne "204") {
     print STDERR "\nDeleting role permission failed (Response ".$Client->responseCode().")!\n";
-    exit(-1);
+    return 0;
   }
   else {
     $Result = 1;
@@ -670,7 +696,7 @@ sub _KIXAPICreateRole {
   }
   else {
     print STDERR "Creating role failed (Response ".$Params{Client}->responseCode().")!\n";
-    print STDERR Dumper($Params{Role});
+    print STDERR "Role Data:".Dumper($Params{Role})."\n";
   }
 
   return $Result;
@@ -791,6 +817,7 @@ sub _WriteExport {
   for my $CurrFile ( keys( %{$Params{Data}}) ) {
 
     my $ResultFileName = $CurrFile;
+    $Params{CSVOutputDir} = $Params{CSVOutputDir} || '.';
     my $OutputFileName = $Params{CSVOutputDir}."/".$ResultFileName;
 
     open ( my $FH, ">:encoding(".$Params{CSVEncoding}.")",
