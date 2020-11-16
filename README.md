@@ -32,7 +32,7 @@ shell> sudo apt install libconfig-simple-perl librest-client-perl libjson-perl l
 
 Script `bin/kix18.ManageRoles.pl` retrieves role and permission infomation from a KIX18 by communicating with its REST-API.
 
-The provided `RoleData_Sample.csv` contains default roles and permissions as delivered by KIX. We try to keep this up to date. However, this script collection is mostly a fun side project, so please bear with us if it should lag behind and give us a hind. 
+The provided `RoleData_Sample.csv` contains default roles and permissions as delivered by KIX. We try to keep this up to date. However, this script collection is mostly a fun side project, so please bear with us if it should lag behind and give us a hind.
 
 ### Required Perl Packages
 
@@ -49,9 +49,12 @@ shell> sudo apt install perl-Text-CSV
 
 
 ### Usage
-`./bin/kix18.ManageRoles.pl --help`
-`./bin/kix18.ManageRoles.pl --config ./config/kix18.ManageRoles.cfg --dir export -d /tmp`
-`./bin/kix18.ManageRoles.pl --config ./config/kix18.ManageRoles.cfg --dir import --f ./sample/RoleData_Sample.csv --verbose 2`
+
+```
+./bin/kix18.ManageRoles.pl --help
+./bin/kix18.ManageRoles.pl --config ./config/kix18.ManageRoles.cfg --dir export -d /tmp
+./bin/kix18.ManageRoles.pl --config ./config/kix18.ManageRoles.cfg --dir import --f ./sample/RoleData_Sample.csv --verbose 2
+```
 
 
 The script can be used by referring to a configuration and object type only. Any parameter given by command line overwrites values specified in the config file. Use `kix18.DBSync.pl --help` for a detailed parameter listing.
