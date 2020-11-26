@@ -18,11 +18,11 @@ Scripts have been developed using CentOS8 or Ubuntu/Debian as target plattform. 
 
 - CentOS/RHEL
 ```
-shell> sudo yum install perl-Config-Simple perl-REST-Client perl-JSO perl-LWP-Protocol-https perl-DBI perl-URI perl-Pod-Usage perl-Getopt-Long
+shell> sudo yum install perl-Config-Simple perl-REST-Client perl-JSON perl-LWP-Protocol-https perl-DBI perl-URI perl-Pod-Usage perl-Getopt-Long perl-Text-CSV
 ```
 - Ubuntu/Debian
 ```
-shell> sudo apt install libconfig-simple-perl librest-client-perl libjson-perl liblwp-protocol-https-perl libdbi-perl liburi-perl perl-doc libgetopt-long-descriptive-perl
+shell> sudo apt install libconfig-simple-perl librest-client-perl libjson-perl liblwp-protocol-https-perl libdbi-perl liburi-perl perl-doc libgetopt-long-descriptive-perl libtext-csv-perl
 ```
 
 
@@ -33,19 +33,6 @@ shell> sudo apt install libconfig-simple-perl librest-client-perl libjson-perl l
 Script `bin/kix18.ManageRoles.pl` retrieves role and permission infomation from a KIX18 by communicating with its REST-API.
 
 The provided `RoleData_Sample.csv` contains default roles and permissions as delivered by KIX. We try to keep this up to date. However, this script collection is mostly a fun side project, so please bear with us if it should lag behind and give us a hind.
-
-### Required Perl Packages
-
-For handling CSV following packages need to be installed additionally:
-
-- CentOS
-```
-shell> sudo yum install libtext-csv-perl
-```
-- Ubuntu/Debian
-```
-shell> sudo apt install perl-Text-CSV
-```
 
 
 ### Usage
