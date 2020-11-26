@@ -299,3 +299,5 @@ Country      = "addr_country"
 Url          = "url"
 ValidID      = "SET:1"
 ```
+
+PS: the DB-structure for this is contained in `sample/MyCRMDB.sql`
