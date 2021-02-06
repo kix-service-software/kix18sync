@@ -802,7 +802,10 @@ sub _KIXAPIUpdateContact {
     }
   };
 
-  $Params{Client}->PATCH( "/api/v1/contacts/".$Params{Contact}->{ID}, to_json( $RequestBody ));
+  $Params{Client}->PATCH(
+      "/api/v1/contacts/".$Params{Contact}->{ID}, 
+      encode("utf-8",to_json( $RequestBody ))
+    );
 
   #  update ok...
   if( $Params{Client}->responseCode() eq "200") {
