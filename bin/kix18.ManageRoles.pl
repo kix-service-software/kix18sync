@@ -220,6 +220,14 @@ my %ValidList = _KIXAPIValidList(
 );
 my %RevValidList = reverse(%ValidList);
 
+
+# lookup teams...
+my %TeamList = _KIXAPITeamList(
+  { %Config, Client => $KIXClient}
+);
+my %RevTeamList = reverse(%TeamList);
+
+
 # import CSV-data...
 my $ResultData = ();
 
@@ -387,6 +395,19 @@ if ( $Config{Direction} eq 'import') {
               .$CurrRP{'ID'}.">..."
               if( $Config{Verbose} );
           }
+      }
+
+      # check target for name lookup
+      while( $CurrRP{'Target'} =~ /.+(<TeamName2ID\:)(.+)>.+/) {
+        my $TeamName = $2;
+        my $Pattern = $1.$TeamName.'>';
+        my $TeamID = $TeamList{$TeamName} || '';
+
+        if( !$TeamID ) {
+          print STDERR "\nNo TeamID fround for <$TeamName> (line )!\n";
+          $TeamID =  "UnknownTeam_$TeamName";
+        }
+        $CurrRP{'Target'} =~ s/$Pattern/$TeamID/eg;
       }
 
       # store current permission...
@@ -734,6 +755,28 @@ sub _KIXAPIUpdateRole {
 }
 
 
+sub _KIXAPITeamList{
+
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+
+  $Params{Client}->GET( "/api/v1/system/ticket/queues");
+
+  if( $Client->responseCode() ne "200") {
+    print STDERR "\nSearch for teams failed (Response ".$Client->responseCode().")!\n";
+    exit(-1);
+  }
+  else {
+    my $Response = from_json( $Client->responseContent() );
+    for my $CurrItem ( @{$Response->{Queue}}) {
+      $Result{ $CurrItem->{'Fullname'} } = $CurrItem->{QueueID};
+    }
+  }
+
+  return %Result;
+}
+
 sub _KIXAPIValidList {
 
   my %Params = %{$_[0]};
@@ -775,18 +818,20 @@ sub _ReadFile {
   my $InCSV = Text::CSV->new (
     {
       binary => 1,
-      auto_diag => 1,
+      #auto_diag => 1,
       sep_char   => $Params{CSVSeparator},
       quote_char => $Params{CSVQuote},
-      eol => "\r\n",
+      #eol => "\r\n",
     }
   );
 
   open my $FH, "<:encoding(".$Params{CSVEncoding}.")", $Config{CSVInputDir}."/".$Params{CSVFile}
     or die "Could not read $Config{CSVInputDir}/$Params{CSVFile}: $!";
+
   my $Result = $InCSV->getline_all ($FH);
-  #print STDERR "\n....".Dumper(@Result)."...";
   print STDOUT "Reading import file $Params{CSVFile}".".\n" if( $Config{Verbose} > 2);
+  print STDOUT "Got".Dumper($Result).".\n" if( $Config{Verbose} > 3);
+
   close $FH;
 
   return $Result;
@@ -810,7 +855,7 @@ sub _WriteExport {
       auto_diag => 1,
       sep_char   => $Params{CSVSeparator},
       quote_char => $Params{CSVQuote},
-      eol => "\r\n",
+      #eol => "\r\n",
     }
   );
 

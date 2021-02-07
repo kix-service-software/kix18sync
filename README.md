@@ -57,6 +57,10 @@ The script can be used by referring to a configuration and object type only. Any
 - `verbose`: makes the script verbose (1..4)
 - `help`: show help message
 
+#### Resolving Team-/Queue-Names
+
+The script is able to resolve team names given in permissions by `<TeamName2ID:Some::Full::Team::Name>` instead of numeric IDs. This is only supported in import. If a team name cannot be resolved the given pattern is replaced by `UnknownTeam_Some::Full::Team::Name`. 
+
 
 ### Configuration
 
