@@ -109,9 +109,6 @@ Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
 --help show help message
 =cut
 
-=item
---orgsearch enables org.-lookup by search (requires hotfix in KIX18-backend!)
-=cut
 
 =back
 
@@ -157,10 +154,6 @@ GetOptions (
   "r"          => \$Config{RemoveSourceFile},
   "nossl"      => \$Config{NoSSLVerify},
   "verbose=i"  => \$Config{Verbose},
-
-  # temporary workaround...
-  "orgsearch"  => \$Config{OrgSearch},
-
   "help"       => \$Help,
 );
 
@@ -803,7 +796,7 @@ sub _KIXAPIUpdateContact {
   };
 
   $Params{Client}->PATCH(
-      "/api/v1/contacts/".$Params{Contact}->{ID}, 
+      "/api/v1/contacts/".$Params{Contact}->{ID},
       encode("utf-8",to_json( $RequestBody ))
     );
 
@@ -886,15 +879,9 @@ sub _KIXAPISearchOrg {
 
     my $Query = {};
     $Query->{Organisation}->{AND} =\@Conditions;
+
     my @QueryParams = qw{};
-
-    if( $Config{OrgSearch} ) {
-      @QueryParams =  ("search=".uri_escape( to_json( $Query)),);
-
-    }
-    else {
-        @QueryParams =  ("filter=".uri_escape( to_json( $Query)),);
-    }
+    @QueryParams =  ("search=".uri_escape( to_json( $Query)),);
 
     my $QueryParamStr = join( ";", @QueryParams);
 
