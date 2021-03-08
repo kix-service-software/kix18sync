@@ -268,6 +268,7 @@ if( !$QR ) {
 }
 else {
   my $LineCount = 0;
+  my %OrgIDCache = ();
 
   # process each query result..
   DBITEM:
@@ -276,9 +277,35 @@ else {
       $LineCount++;
 
       my %Data = ();
+      my %DynamicFieldData = ();
+
       my $RowIndex = 0;
       for my $CurrKey ( @RowNames ) {
-        $Data{ $RevMap{$CurrKey} } = decode("utf-8", $CurrLine[$RowIndex]);
+        my $Value = decode("utf-8", $CurrLine[$RowIndex]) || '';
+
+        if ( $RevMap{$CurrKey} =~/^DynamicField_(.+)/ ) {
+          if( $Value ) {
+            my $DFKey = $1;
+            my @ValArr = [ $Value ];
+            if( $Config{DFArrayCommaSplit} ) {
+              @ValArr = split( "," , $Value);
+            }
+
+
+            my @CurrValArr = qw{};
+            if( $Data{ 'DFData' }->{$DFKey}
+              && ref($Data{ 'DFData' }->{$DFKey}) eq 'ARRAY')
+            {
+              @CurrValArr = @{ $Data{ 'DFData' }->{$DFKey} };
+            }
+            push( @CurrValArr, @ValArr );
+            $Data{ 'DFData' }->{$DFKey} = \@CurrValArr;
+          }
+        }
+        else {
+          $Data{ $RevMap{$CurrKey} } = $Value;
+        }
+
         $RowIndex++;
       }
 
@@ -286,8 +313,6 @@ else {
         print STDOUT "$LineCount: identifier missing - skipping.\n";
         next DBITEM;
       }
-
-
 
       # search item...
       my %SearchResult = ();
@@ -317,6 +342,13 @@ else {
           $Data{PrimaryOrganisationID} = undef;
           $Data{OrganisationIDs} = undef;
           if( $Data{'PrimaryOrgNo'} ) {
+
+
+            if( $OrgIDCache{ $Data{'PrimaryOrgNo'} } ) {
+              $Data{PrimaryOrganisationID} = $OrgIDCache{ $Data{'PrimaryOrgNo'} };
+              $Data{OrganisationIDs} = [$OrgIDCache{ $Data{'PrimaryOrgNo'} }];
+            }
+            else {
               my %OrgID = _KIXAPISearchOrg({
                 %Config,
                 Client      => $KIXClient,
@@ -326,22 +358,60 @@ else {
               if ( $OrgID{ID} ) {
                   $Data{PrimaryOrganisationID} = $OrgID{ID};
                   $Data{OrganisationIDs} = [$OrgID{ID}];
+                  $OrgIDCache{ $Data{'PrimaryOrgNo'} } = $OrgID{ID};
               }
               else {
                   print STDOUT "$LineCount: no organization found for <"
                     . $Data{'PrimaryOrgNo'}
                     . "> ($Data{'Email'}/$Data{'Login'}).\n";
+              }
             }
+
           }
       }
       elsif( $Config{ObjectType} eq 'Organisation') {
           # (1b) nothing to prepare yet...
       }
 
+
       # (2) fixed values
       for my $CurrKey( keys(%FixValueMap )) {
-          $Data{$CurrKey} = $FixValueMap{$CurrKey};
+          if( $CurrKey =~ /^DynamicField_(.+)/ ) {
+            my $DFKey = $1;
+            my $ValStr = $FixValueMap{$CurrKey} || '';
+            my @ValArr = [ $ValStr ];
+            if( $Config{DFArrayCommaSplit} ) {
+              @ValArr = split( "," , $ValStr);
+            }
+            $Data{ 'DFData' }->{$DFKey} = \@ValArr
+          }
+          else {
+            $Data{$CurrKey} = $FixValueMap{$CurrKey};
+          }
       }
+
+
+      # (3) transform DFData to DynamicFields
+      # DynamicFields => [
+      #   {
+      #     "Name"  => "Keywords",
+      #     "Value" => [ "Problem", "Server"]
+      #   }
+      # ],
+      my @DFArr = qw{};
+      if( $Data{'DFData'} ) {
+        for my $CurrKey ( keys( %{$Data{'DFData'}} ) ) {
+          my %CurrArrItem = ();
+          $CurrArrItem{Name} = $CurrKey;
+          $CurrArrItem{Value} = $Data{'DFData'}->{$CurrKey};
+          push( @DFArr, \%CurrArrItem);
+        }
+
+        if( scalar(@DFArr) ) {
+          $Data{'DynamicFields'} = \@DFArr;
+        }
+      }
+      delete( $Data{'DFData'} );
 
       # update existing item...
       if ( $SearchResult{ID} ) {
