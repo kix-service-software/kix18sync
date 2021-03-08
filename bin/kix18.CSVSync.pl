@@ -109,7 +109,6 @@ Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
 --help show help message
 =cut
 
-
 =back
 
 
@@ -162,7 +161,13 @@ if( $Help ) {
   exit(-1)
 }
 
+# APOLOGY-NOTE
+# OK, this is getting a bit messy. I do know this is really ugly code.
+# I regret not having started a bit more modularized - it sort of evolved from
+# a quick need. Someday there will be a re-evolution, but not today :-/.
 
+
+# read CSV input...
 if( $Config{CSVInputFile} ) {
   print STDOUT "\nInput file given - ignoring input directory." if( $Config{Verbose});
   my $basename = basename( $Config{CSVInputFile} );
@@ -170,8 +175,6 @@ if( $Config{CSVInputFile} ) {
   $Config{CSVInputDir} = $dirname;
   $Config{CSVInputFile} = $basename;
 }
-
-
 
 # read config file...
 my %FileConfig = ();
@@ -186,8 +189,6 @@ if( $Config{ConfigFilePath} ) {
     }
 
 }
-
-
 
 # check requried params...
 for my $CurrKey (qw{KIXURL KIXUserName KIXPassword ObjectType CSVInputDir}) {
@@ -225,7 +226,6 @@ if ( $Config{ObjectType} eq 'Asset') {
     { %Config, Client => $KIXClient, Class => 'ITSM::ConfigItem::Class'}
   );
 
-
   # lookup deployment states...
   my %DeplStateList = _KIXAPIGeneralCatalogList(
     { %Config, Client => $KIXClient, Class => 'ITSM::ConfigItem::DeploymentState'}
@@ -243,6 +243,13 @@ if ( $Config{ObjectType} eq 'Asset') {
 }
 elsif ( $Config{ObjectType} eq 'Contact') {
 
+  my %OrgIDCache = ();
+
+  # lookup DFs for organizations...
+  my %DFList = _KIXAPIDynamicFieldList(
+    { %Config, Client => $KIXClient, ObjectType => 'Contact'}
+  );
+  my %IgnoredDF = ();
 
   # lookup permission roles...
   my %RoleList = _KIXAPIRoleList(
@@ -301,15 +308,19 @@ elsif ( $Config{ObjectType} eq 'Contact') {
 
               # skip role if not fitting IsAgent/IsCustomer status...
               next ROLENAME if( !$IsAgent && !$IsCustomer);
-              next ROLENAME if( $IsAgent && !$IsCustomer
-                  && !$RoleList{$CurrRoleName}->{Agent}
-                  && $RoleList{$CurrRoleName}->{Customer}
-              );
-              next ROLENAME if( !$IsAgent && $IsCustomer
-                  && $RoleList{$CurrRoleName}->{Agent}
-                  && !$RoleList{$CurrRoleName}->{Customer}
-              );
+              next ROLENAME if( $RoleList{$CurrRoleName}->{Agent} && !$IsAgent);
+              next ROLENAME if( $RoleList{$CurrRoleName}->{Customer} && !$IsCustomer);
+
               push( @RoleIDsArr, $RoleList{$CurrRoleName}->{ID} ) ;
+          }
+
+          if( $Config{Verbose} > 4) {
+            print STDOUT "\nUserLogin "
+              .($CurrLine->[$Config{'Contact.ColIndex.Login'}] || '-')
+              ." (IsAgent=$IsAgent /"
+              ." IsCustomer=$IsCustomer) with "
+              ." roles (".join( ", ", @RoleArr).")"
+              ." with role IDs (".join( ", ", @RoleIDsArr).")";
           }
 
           # set user invalid if neither Agent nor Customer...
@@ -416,7 +427,12 @@ elsif ( $Config{ObjectType} eq 'Contact') {
       }
 
       my $OrgID = undef;
-      if( $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] ) {
+
+      if( $OrgIDCache{ $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] } ) {
+        $OrgID = $OrgIDCache{ $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] };
+
+      }
+      elsif( $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] ) {
 
         my %OrgID = _KIXAPISearchOrg({
           %Config,
@@ -426,6 +442,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
 
         if ( $OrgID{ID} ) {
           $OrgID = $OrgID{ID};
+          $OrgIDCache{ $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] } = $OrgID;
         }
         else {
           print STDOUT "$LineCount: no organization found for <"
@@ -458,6 +475,45 @@ elsif ( $Config{ObjectType} eq 'Contact') {
           ValidID         => $ContactValidId,
           Zip             => $CurrLine->[$Config{'Contact.ColIndex.Zip'}],
       );
+
+      # now get all all dynamic DynamicFields
+      my @LineDFs = qw{};
+
+      CONFIGKEY:
+      for my $CurrKey ( keys(%Config)) {
+        next CONFIGKEY if( $CurrKey !~ /^Contact.ColIndex.DynamicField_(.+)/);
+        my $CurrDFKey = $1;
+
+        next CONFIGKEY if( $IgnoredDF{$CurrDFKey} );
+
+        # skip if DF does not exists...
+        if( !$DFList{$CurrDFKey} ) {
+          print STDERR "\nDynamic Field <$CurrDFKey> does not exist for object type - ignoring column.";
+          # and remeber to skip it in next lines..
+          $IgnoredDF{$CurrDFKey} = 1;
+          next CONFIGKEY;
+        }
+
+        my %CurrDF = ();
+        my @CurrDFValArr = qw{};
+        my $CurrDFValStr = $CurrLine->[$Config{$CurrKey}] || '';
+        if( $CurrDFValStr ) {
+          @CurrDFValArr = [$CurrDFValStr];
+          if( $Config{DFArrayCommaSplit} ) {
+            @CurrDFValArr = split( ',', $CurrDFValStr);
+          }
+        }
+
+        $CurrDF{"Name"}  = $CurrDFKey;
+        $CurrDF{"Value"} = \@CurrDFValArr;
+
+        if( scalar(@CurrDFValArr) ) {
+          push(@LineDFs, \%CurrDF);
+        }
+      }
+      if( scalar(@LineDFs) ) {
+        $Contact{DynamicFields} = \@LineDFs;
+      }
 
       # assign user login if given...
       if( $ContactUserID ) {
@@ -544,6 +600,14 @@ elsif ( $Config{ObjectType} eq 'Contact') {
 }
 elsif ( $Config{ObjectType} eq 'Organisation') {
 
+
+
+  # lookup DFs for organizations...
+  my %DFList = _KIXAPIDynamicFieldList(
+    { %Config, Client => $KIXClient, ObjectType => 'Organisation'}
+  );
+  my %IgnoredDF = ();
+
   # process import lines
   for my $CurrFile ( keys( %{$CSVDataRef}) ) {
 
@@ -572,6 +636,7 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
         $ValidId = $CurrLine->[$Config{'Org.ColIndex.ValidID'}];
       }
 
+      # get fixed organization attributes..
       my %Organization = (
           City            => $CurrLine->[$Config{'Org.ColIndex.City'}],
           Number   => $CurrLine->[$Config{'Org.ColIndex.Number'}],
@@ -584,6 +649,52 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
           Url      => $CurrLine->[$Config{'Org.ColIndex.Url'}],
           ValidID  => $ValidId,
       );
+
+
+      # now get all all dynamic DynamicFields
+      my @LineDFs = qw{};
+
+      CONFIGKEY:
+      for my $CurrKey ( keys(%Config)) {
+        next CONFIGKEY if( $CurrKey !~ /^Org.ColIndex.DynamicField_(.+)/);
+        my $CurrDFKey = $1;
+
+        next CONFIGKEY if( $IgnoredDF{$CurrDFKey} );
+
+        # skip if DF does not exists...
+        if( !$DFList{$CurrDFKey} ) {
+          print STDERR "\nDynamic Field <$CurrDFKey> does not exist for object type - ignoring column.";
+          # and remeber to skip it in next lines..
+          $IgnoredDF{$CurrDFKey} = 1;
+          next CONFIGKEY;
+        }
+
+        my %CurrDF = ();
+        my @CurrDFValArr = qw{};
+        my $CurrDFValStr = $CurrLine->[$Config{$CurrKey}] || '';
+        if( $CurrDFValStr ) {
+          @CurrDFValArr = [$CurrDFValStr];
+          if( $Config{DFArrayCommaSplit} ) {
+            @CurrDFValArr = split( ',', $CurrDFValStr);
+          }
+        }
+
+        $CurrDF{"Name"}  = $CurrDFKey;
+        $CurrDF{"Value"} = \@CurrDFValArr;
+
+        if( scalar(@CurrDFValArr) ) {
+          push(@LineDFs, \%CurrDF);
+        }
+      }
+      if( scalar(@LineDFs) ) {
+        $Organization{DynamicFields} = \@LineDFs;
+      }
+      # DynamicFields => [
+      #   {
+      #     "Name"  => "Keywords",
+      #     "Value" => [ "Problem", "Server"]
+      #   }
+      # ],
 
       # cleanup empty values...
       for my $CurrKey ( keys(%Organization) ) {
@@ -807,6 +918,9 @@ sub _KIXAPIUpdateContact {
   }
   else {
     print STDERR "Updating contact failed (Response ".$Params{Client}->responseCode().")!\n";
+    print STDERR "\nRequestBody: $RequestBody";
+    print STDERR "\nRequestBody: ".Dumper($Params{Contact});
+    exit(-1);
   }
 
   return $Result;
@@ -879,7 +993,6 @@ sub _KIXAPISearchOrg {
 
     my $Query = {};
     $Query->{Organisation}->{AND} =\@Conditions;
-
     my @QueryParams = qw{};
     @QueryParams =  ("search=".uri_escape( to_json( $Query)),);
 
@@ -1007,7 +1120,7 @@ sub _KIXAPIRoleList {
       {
         %RoleData = map { $_ => 1 } @{$CurrItem->{UsageContextList}};
       }
-      $RoleData{ID} = $CurrItem->{ItemID};
+      $RoleData{ID} = $CurrItem->{ID};
 
       $Result{ $CurrItem->{Name} } = \%RoleData;
     }
@@ -1343,6 +1456,60 @@ sub _KIXAPIGeneralCatalogList {
   return %Result;
 }
 
+
+
+
+sub _KIXAPIDynamicFieldList {
+
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+  my $Class  = $Params{ObjectType} || "-";
+
+  my @Conditions = qw{};
+  if( $Params{ObjectType} ) {
+    push( @Conditions,
+      {
+        "Field"    => "ObjectType",
+        "Operator" => "EQ",
+        "Type"     => "STRING",
+        "Value"    => $Params{ObjectType},
+      }
+    );
+  }
+
+  my $Query = {};
+  my $QueryParamStr = "";
+
+  if( @Conditions ) {
+    $Query->{DynamicField}->{AND} =\@Conditions;
+    my @QueryParams = (
+      "filter=".uri_escape( to_json( $Query)),
+      "include=Config"
+    );
+    $QueryParamStr = join( ";", @QueryParams);
+  }
+
+  $Params{Client}->GET( "/api/v1/system/dynamicfields?$QueryParamStr");
+
+  if( $Client->responseCode() ne "200") {
+    print STDERR "\nSearch for DF failed (Response ".$Client->responseCode().")!\n";
+    exit(-1);
+  }
+  else {
+    my $Response = from_json( $Client->responseContent() );
+    for my $CurrItem ( @{$Response->{DynamicField}}) {
+      $Result{ $CurrItem->{Name} } = {
+        ID         => $CurrItem->{ID},
+        FieldType  => $CurrItem->{FieldType},
+        ObjectType => $CurrItem->{ObjectType},
+        Config     => $CurrItem->{Config},
+      };
+    }
+  }
+
+  return %Result;
+}
 
 #-------------------------------------------------------------------------------
 # FILE HANDLING FUNCTIONS

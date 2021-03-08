@@ -59,7 +59,7 @@ The script can be used by referring to a configuration and object type only. Any
 
 #### Resolving Team-/Queue-Names
 
-The script is able to resolve team names given in permissions by `<TeamName2ID:Some::Full::Team::Name>` instead of numeric IDs. This is only supported in import. If a team name cannot be resolved the given pattern is replaced by `UnknownTeam_Some::Full::Team::Name`. 
+The script is able to resolve team names given in permissions by `<TeamName2ID:Some::Full::Team::Name>` instead of numeric IDs. This is only supported in import. If a team name cannot be resolved the given pattern is replaced by `UnknownTeam_Some::Full::Team::Name`.
 
 
 ### Configuration
@@ -94,6 +94,7 @@ Script `bin/kix18.CSVSync.pl` provides a client for importing data from CSV file
 
 Users are created/updated if a data for `Login` is given. Only then further columns such as `Password`, `Roles`, `IsAgent` and `IsCustomer` are considered at all. If there is no user context (`IsAgent` or  `IsCustomer`) set, the users account will be set to `invalid`.  `Roles` must contain **comma-separated names of roles** existing in your KIX. Only roles which match the given usage context (`IsAgent` or  `IsCustomer`) are accepted. Predefined default roles `Agent User` or `Customer` are added automatically by the script depending on the users context (hopefully no one renamed them). Non-existing or misspelled **roles will not be created.**
 
+Dynamic Field values are split along comma and submitted as arrays by default, see config file option `DFArrayCommaSplit`.
 
 ### Required Perl Packages
 
@@ -157,50 +158,56 @@ CSVOutputDir       = "/workspace/tools/kix18sync/sample"
 CSVEncoding        = "utf-8"
 #CSVQuote           = "none"
 CSVQuote           = "\""
+DFArrayCommaSplit  = "1"
 
 # Mapping configuration ...
 
-#Contact.Identifier            = "Email" - NOT YET IMPLEMENTED
-Contact.SearchColIndex        = "1"
-Contact.ColIndex.Login        = "0"
-Contact.ColIndex.Email        = "1"
-Contact.ColIndex.Firstname    = "2"
-Contact.ColIndex.Lastname     = "3"
-Contact.ColIndex.Title        = "4"
-Contact.ColIndex.Street       = "5"
-Contact.ColIndex.City         = "6"
-Contact.ColIndex.Zip          = "7"
-Contact.ColIndex.Country      = "8"
-Contact.ColIndex.Phone        = "9"
-Contact.ColIndex.Mobile       = "10"
-Contact.ColIndex.Fax          = "11"
-Contact.ColIndex.Comment      = "12"
-Contact.ColIndex.PrimaryOrgNo = "13"
-#Contact.ColIndex.ValidID      = "14"
-Contact.ColIndex.ValidID      = "SET:1"
-Contact.ColIndex.Password     = "15"
-Contact.ColIndex.Roles        = "16"
-#Contact.ColIndex.IsAgent      = "SET:1|0"
-Contact.ColIndex.IsAgent      = "17"
-#Contact.ColIndex.IsCustomer   = "SET:1|0"
-Contact.ColIndex.IsCustomer   = "18"
+#Contact.Identifier                   = "Email" - NOT YET IMPLEMENTED
+Contact.SearchColIndex               = "1"
+Contact.ColIndex.Login               = "0"
+Contact.ColIndex.Email               = "1"
+Contact.ColIndex.Firstname           = "2"
+Contact.ColIndex.Lastname            = "3"
+Contact.ColIndex.Title               = "4"
+Contact.ColIndex.Street              = "5"
+Contact.ColIndex.City                = "6"
+Contact.ColIndex.Zip                 = "7"
+Contact.ColIndex.Country             = "8"
+Contact.ColIndex.Phone               = "9"
+Contact.ColIndex.Mobile              = "10"
+Contact.ColIndex.Fax                 = "11"
+Contact.ColIndex.Comment             = "12"
+Contact.ColIndex.PrimaryOrgNo        = "13"
+#Contact.ColIndex.ValidID             = "14"
+Contact.ColIndex.ValidID             = "SET:1"
+Contact.ColIndex.Password            = "15"
+Contact.ColIndex.Roles               = "16"
+#Contact.ColIndex.IsAgent             = "SET:1|0"
+Contact.ColIndex.IsAgent             = "17"
+#Contact.ColIndex.IsCustomer          = "SET:1|0"
+Contact.ColIndex.IsCustomer          = "18"
+Contact.ColIndex.DynamicField_Source = "19"
 
-Org.SearchColIndex    = "0"
-Org.ColIndex.Number   = "0"
-Org.ColIndex.Name     = "1"
-Org.ColIndex.Comment  = "2"
-Org.ColIndex.Street   = "3"
-Org.ColIndex.City     = "4"
-Org.ColIndex.Zip      = "5"
-Org.ColIndex.Country  = "6"
-Org.ColIndex.Url      = "7"
-Org.ColIndex.ValidID  = "SET:1"
+
+Org.SearchColIndex             = "0"
+Org.ColIndex.Number            = "0"
+Org.ColIndex.Name              = "1"
+Org.ColIndex.Comment           = "2"
+Org.ColIndex.Street            = "3"
+Org.ColIndex.City              = "4"
+Org.ColIndex.Zip               = "5"
+Org.ColIndex.Country           = "6"
+Org.ColIndex.Url               = "7"
+Org.ColIndex.ValidID           = "SET:1"
+Org.ColIndex.DynamicField_Type = "8"
 ```
 
 ----
 ## Sync from Database Source - kix18.DBSync.pl
 
 Script `bin/kix18.DBSync.pl` provides a client for importing data from a remote DB to KIX18 REST-API, supporting Contact and Organisation (so far).
+
+Dynamic Field values are split along comma and submitted as arrays by default, see config file option `DFArrayCommaSplit`.
 
 ### Required Perl Packages
 
@@ -251,11 +258,12 @@ APITimeOut         = 30
 # DB configuration
 [DB]
 # DSN is the full DB connection string without username/password
-#DSN         = "DBI:mysql:database=MyCRMDB;host=mariadb.server.local;"
-#DSN         = "DBI:ODBC:MyODBCDBName"
-DSN         = "DBI:Pg:dbname=kix17;host=kix.company.de;"
-DBUser      = "SomeDBUser"
-DBPassword  = "PASSWORD"
+#DSN                = "DBI:mysql:database=MyCRMDB;host=mariadb.server.local;"
+#DSN                = "DBI:ODBC:MyODBCDBName"
+DSN                = "DBI:Pg:dbname=kix17;host=kix.company.de;"
+DBUser             = "SomeDBUser"
+DBPassword         = "PASSWORD"
+DFArrayCommaSplit  = "1"
 
 # limit might be useful for testing (only for MySQL/MariaDB or PostgreSQL)...
 DBLimit     = "100"
@@ -274,34 +282,38 @@ Table        = "some_customer_user"
 Condition    = ""
 # use condition if you want to sync. only newer entries, e.g.
 # Condition    = " create_time > (current_timestamp - 86400)"
-Email        = "email0"
-Firstname    = "first_name"
-Lastname     = "last_name"
-Title        = "title"
-Street       = "addr_street"
-City         = "addr_city"
-Zip          = "addr_zip"
-Country      = "addr_country"
-Phone        = "phone1"
-Mobile       = "phone2"
-Fax          = "fax1"
-Comment      = "businessfnct"
-PrimaryOrgNo = "customer_id"
-ValidID      = "SET:1"
+Email               = "email0"
+Firstname           = "first_name"
+Lastname            = "last_name"
+Title               = "title"
+Street              = "addr_street"
+City                = "addr_city"
+Zip                 = "addr_zip"
+Country             = "addr_country"
+Phone               = "phone1"
+Mobile              = "phone2"
+Fax                 = "fax1"
+Comment             = "businessfnct"
+PrimaryOrgNo        = "customer_id"
+ValidID             = "SET:1"
+#DynamicField_Source = "some_db_row"
+DynamicField_Source = "SET:sample database"
 
 # Mapping configuration for organisation items...
 [Organisation]
-Table        = "some_org"
-Condition    = ""
-Number       = "customer_id"
-Name         = "name_org"
-Comment      = "comments"
-Street       = "addr_street"
-City         = "addr_city"
-Zip          = "addr_zip"
-Country      = "addr_country"
-Url          = "url"
-ValidID      = "SET:1"
+Table             = "some_org"
+Condition         = ""
+Number            = "customer_id"
+Name              = "name_org"
+Comment           = "comments"
+Street            = "addr_street"
+City              = "addr_city"
+Zip               = "addr_zip"
+Country           = "addr_country"
+Url               = "url"
+ValidID           = "SET:1"
+#DynamicField_Type = "SET:customer,internal supplier"
+DynamicField_Type = "type"
 ```
 
-PS: the DB-structure for this is contained in `sample/MyCRMDB.sql`
+PS: the DB-structure for this example in MariaDB/MySQL is contained in `sample/MyCRMDB.sql`

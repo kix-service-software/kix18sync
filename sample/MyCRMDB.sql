@@ -2,7 +2,7 @@
 -- mysql -p -e "CREATE DATABASE MyCRMDB CHARACTER SET utf8 COLLATE utf8_general_ci;"
 -- mysql -p -e "GRANT ALL PRIVILEGES ON MyCRMDB.* TO 'SomeDBUser'@'localhost';"
 -- mysql -p -e "FLUSH PRIVILEGES;"
--- mysql -hlocalhost -uSomeDBUser -pPASSWORD MyCRMDB < ./sample/sampledb.sql
+-- mysql -hlocalhost -uSomeDBUser -pPASSWORD MyCRMDB < ./sample/MyCRMDB.sql
 
 DROP TABLE IF EXISTS some_org;
 DROP TABLE IF EXISTS some_customer_user;
@@ -18,6 +18,7 @@ CREATE TABLE some_org
   addr_zip     VARCHAR(50),
   addr_country VARCHAR(50),
   url          VARCHAR(50),
+  type         VARCHAR(50),
   CONSTRAINT so_id_pk PRIMARY KEY (id)
 );
 
@@ -29,7 +30,9 @@ INSERT INTO some_org SET
   addr_city    = 'Newark, DE',
   addr_zip     = '19711',
   addr_country = 'United States',
-  url          = 'https://www.some.url';
+  url          = 'https://www.some.url',
+  type         = 'customer,internal supplier';
+
 INSERT INTO some_org SET
   customer_id  = 'SECRET',
   name_org     = 'Secret Company Ltd',
@@ -38,7 +41,20 @@ INSERT INTO some_org SET
   addr_city    = 'London',
   addr_zip     = 'W1U 8ED',
   addr_country = 'United Kingdom',
-  url          = 'https://www.someother.url';
+  url          = 'https://www.someother.url',
+  type         = 'customer';
+
+INSERT INTO some_org SET
+  customer_id  = 'TWD',
+  name_org     = 'Torchwood Ltd',
+  comments     = 'Yet another sample entry.',
+  addr_street  = '223 Murray Rd',
+  addr_city    = 'Cardiff',
+  addr_zip     = 'XYZ 123',
+  addr_country = 'United Kingdom',
+  url          = 'https://www.yetanother.url',
+  type         = '';
+
 
 -- sample contact source...
 CREATE TABLE some_customer_user
