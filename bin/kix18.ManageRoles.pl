@@ -333,7 +333,10 @@ if ( $Config{Direction} eq 'import') {
               }
             }) || '' ;
 
-            next LINE if(!$CurrRP{'ID'});
+            if( !$CurrRP{'ID'} ) {
+              %PrevRole = %CurrRP;
+              next LINE;
+            }
             print STDOUT "\nCreated new role <"
               .$CurrRP{'Name'}."/"
               .$CurrRP{'ID'}.">..."
@@ -351,7 +354,11 @@ if ( $Config{Direction} eq 'import') {
                 ValidID      => $CurrRP{'ValidID'},
               }
             });
-            next LINE if(!$UpdateOK);
+
+            if(!$UpdateOK) {
+              %PrevRole = %CurrRP;
+              next LINE;
+            }
 
             print STDOUT "\n\tUpdated existing role <"
               .$CurrRP{'Name'}."/"
@@ -369,7 +376,10 @@ if ( $Config{Direction} eq 'import') {
                     PermID => $CurrExistPerm->{ID},
                   });
 
-                  next LINE if(!$RemoveOK);
+                  if( !$RemoveOK) {
+                    %PrevRole = %CurrRP;
+                    next LINE;
+                  }
 
               }
           }
@@ -398,7 +408,7 @@ if ( $Config{Direction} eq 'import') {
       }
 
       # check target for name lookup
-      while( $CurrRP{'Target'} =~ /.+(<TeamName2ID\:)(.+)>.+/) {
+      while( $CurrRP{'Target'} =~ /.*(<TeamName2ID\:)(.+)>.*/) {
         my $TeamName = $2;
         my $Pattern = $1.$TeamName.'>';
         my $TeamID = $TeamList{$TeamName} || '';
@@ -422,6 +432,8 @@ if ( $Config{Direction} eq 'import') {
         }
       });
       if( !$Result ) {
+        # remember current role...
+        %PrevRole = %CurrRP;
         next LINE;
       }
       elsif( $Config{Verbose} > 3) {
@@ -815,13 +827,17 @@ sub _ReadFile {
   if( $Params{CSVQuote} =~ /^none.*/i) {
     $Params{CSVQuote} = undef;
   }
+  my $EOL = "\r\n";
+  if( $Params{CSVEOL} eq 'no' ) {
+    $EOL = undef;
+  }
   my $InCSV = Text::CSV->new (
     {
       binary => 1,
       #auto_diag => 1,
       sep_char   => $Params{CSVSeparator},
       quote_char => $Params{CSVQuote},
-      #eol => "\r\n",
+      eol => $EOL,
     }
   );
 
@@ -849,13 +865,17 @@ sub _WriteExport {
   if( $Params{CSVQuote} =~ /^none.*/i) {
     $Params{CSVQuote} = undef;
   }
+  my $EOL = "\r\n";
+  if( $Params{CSVEOL} eq 'no' ) {
+    $EOL = undef;
+  }
   my $OutCSV = Text::CSV->new (
     {
       binary => 1,
       auto_diag => 1,
       sep_char   => $Params{CSVSeparator},
       quote_char => $Params{CSVQuote},
-      #eol => "\r\n",
+      eol        => $EOL,
     }
   );
 
