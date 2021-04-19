@@ -46,9 +46,9 @@ use JSON;
 # VERSION
 =head1 SYNOPSIS
 
-This script retrieves ticket- and asset information from a KIX18 by communicating with its REST-API. Information is stored locally in database tables.
+This script retrieves import selected business object data into a KIX18 by communicating with its REST-API
 
-Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
+Use kix18.CSVSync.pl  --ot ObjectType* --help [other options]
 
 
 =head1 OPTIONS
@@ -56,7 +56,7 @@ Use kix18.dataimport.pl  --ot ObjectType* --help [other options]
 =over
 
 =item
---ot: ObjectType  (Contact|Organisation)
+--ot: ObjectType  (Contact|Organisation|SLA)
 =cut
 
 =item
@@ -215,6 +215,15 @@ exit(-1) if !$CSVDataRef;
 my $KIXClient = _KIXAPIConnect( %Config  );
 exit(-1) if !$KIXClient;
 
+
+# lookup validities...
+my %ValidList = _KIXAPIValidList(
+  { %Config, Client => $KIXClient}
+);
+my %RevValidList = reverse(%ValidList);
+
+
+
 my $Result = 0;
 
 # import CSV-data...
@@ -239,6 +248,130 @@ if ( $Config{ObjectType} eq 'Asset') {
   print STDERR "\nAsset import not supported (yet) - aborting.\n\n";
   pod2usage( -verbose => 1);
   exit(-1)
+
+}
+elsif ( $Config{ObjectType} eq 'SLA') {
+
+  my %CalendarList = _KIXAPICalendarList(
+    { %Config, Client => $KIXClient }
+  );
+
+  # there is no SLA-search method, so we jsut get all SLAs now...
+  my %SLAList = _KIXAPIListSLA(
+    { %Config, Client => $KIXClient }
+  );
+
+  # process import lines
+  FILE:
+  for my $CurrFile ( keys( %{$CSVDataRef}) ) {
+
+    my $LineCount = 0;
+
+    LINE:
+    for my $CurrLine ( @{$CSVDataRef->{$CurrFile}} ) {
+
+      # skip first line (ignore header)...
+      if ( $LineCount < 1) {
+        $LineCount++;
+        next;
+      }
+
+      # prepare validity..
+      my $SLAValidId = 1;
+      if( $Config{'SLA.ColIndex.ValidID'} =~/^SET\:(.+)/) {
+        $SLAValidId = $1;
+      }
+      else {
+        $SLAValidId = $CurrLine->[$Config{'SLA.ColIndex.ValidID'}];
+      }
+      if( $SLAValidId !~ /^\d+$/ && $RevValidList{ $SLAValidId } ) {
+        $SLAValidId     = $RevValidList{ $SLAValidId } || '';
+      }
+      else {
+        $SLAValidId = "";
+      };
+
+      # create SLA data hash/map from CSV data...
+      my %SLA = (
+          Name                => ($CurrLine->[$Config{'SLA.ColIndex.Name'}] || ''),
+          Calendar            => ($CurrLine->[$Config{'SLA.ColIndex.Calendar'}] || ''),
+          FirstResponseTime   => ($CurrLine->[$Config{'SLA.ColIndex.FirstResponseTime'}] || ''),
+          FirstResponseNotify => ($CurrLine->[$Config{'SLA.ColIndex.FirstResponseNotify'}] || ''),
+          SolutionTime        => ($CurrLine->[$Config{'SLA.ColIndex.SolutionTime'}] || ''),
+          SolutionTimeNotify  => ($CurrLine->[$Config{'SLA.ColIndex.SolutionTimeNotify'}] || ''),
+          Comment             => ($CurrLine->[$Config{'SLA.ColIndex.Comment'}] || ''),
+          ValidID             => $SLAValidId,
+      );
+
+      # replace calendar name by calendar index...
+      $SLA{Calendar} = $CalendarList{$SLA{Calendar}} || '';
+
+      # cleanup empty values...
+      for my $CurrKey ( keys(%SLA) ) {
+          $SLA{$CurrKey} = undef if( !length($SLA{$CurrKey}) );
+      }
+
+      # update existing SLA...
+      if( $SLAList{ $CurrLine->[$Config{'SLA.ColIndex.Name'}]} ) {
+
+        my %SLAData = %{$SLAList{ $CurrLine->[$Config{'SLA.ColIndex.Name'}]}};
+
+        if( $SLAData{"Internal"} ) {
+          push( @{$CurrLine}, 'ERROR');
+          push( @{$CurrLine}, 'Cannot update internal entry.');
+          $LineCount++;
+          next LINE;
+        }
+
+        $SLA{ID} = $SLAData{ID};
+        my $Result = _KIXAPIUpdateSLA(
+          { %Config, Client => $KIXClient, SLA => \%SLA }
+        );
+
+        if( !$Result) {
+          push( @{$CurrLine}, 'ERROR');
+          push( @{$CurrLine}, 'Update failed.');
+        }
+        elsif ( $Result == 1 ) {
+          push( @{$CurrLine}, 'no update required');
+          push( @{$CurrLine}, $SLA{ID});
+        }
+        else {
+          push( @{$CurrLine}, 'update');
+          push( @{$CurrLine}, $SLA{ID});
+        }
+
+        print STDOUT "$LineCount: Updated SLA <".$SLA{ID}." / "
+          . $SLA{Name}
+          . ">.\n"
+        if( $Config{Verbose} > 2);
+
+      }
+      # create new SLA...
+      else {
+        my $NewSLAID = _KIXAPICreateSLA(
+          { %Config, Client => $KIXClient, SLA => \%SLA }
+        );
+
+        if ( $NewSLAID ) {
+          push( @{$CurrLine}, 'created');
+          push( @{$CurrLine}, $NewSLAID);
+        }
+        else {
+          push( @{$CurrLine}, 'ERROR');
+          push( @{$CurrLine}, 'Create failed.');
+        }
+
+        print STDOUT "$LineCount: Created SLA <$NewSLAID / "
+          .$SLA{Name}. ">.\n"
+          if( $Config{Verbose} > 2);
+      }
+
+      $LineCount++;
+
+    }
+  }
+
 
 }
 elsif ( $Config{ObjectType} eq 'Contact') {
@@ -837,6 +970,113 @@ sub _KIXAPIConnect {
 
 
 
+
+#-------------------------------------------------------------------------------
+# SLA HANDLING FUNCTIONS KIX-API
+sub _KIXAPIListSLA {
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+
+  $Params{Client}->GET( "/api/v1/system/slas");
+
+  if( $Client->responseCode() ne "200") {
+    print STDERR "\nSearch for roles failed (Response ".$Client->responseCode().")!\n";
+    exit(-1);
+  }
+  else {
+    my $Response = from_json( $Client->responseContent() );
+    for my $CurrItem ( @{$Response->{SLA}}) {
+      my %SLAData = ();
+      $SLAData{"Calendar"}            = $CurrItem->{"Calendar"};
+      $SLAData{"Comment"}             = $CurrItem->{"Comment"};
+      $SLAData{"FirstResponseNotify"} = $CurrItem->{"FirstResponseNotify"};
+      $SLAData{"FirstResponseTime"}   = $CurrItem->{"FirstResponseTime"};
+      $SLAData{"ID"}                  = $CurrItem->{"ID"};
+      $SLAData{"Internal"}            = $CurrItem->{"Internal"};
+      $SLAData{"Name"}                = $CurrItem->{"Name"};
+      $SLAData{"SolutionNotify"}      = $CurrItem->{"SolutionNotify"};
+      $SLAData{"SolutionTime"}        = $CurrItem->{"SolutionTime"};
+      $SLAData{"ValidID"}             = $CurrItem->{"ValidID"};
+
+      $Result{ $CurrItem->{Name} } = \%SLAData;
+    }
+  }
+
+  return %Result;
+}
+
+
+
+sub _KIXAPIUpdateSLA {
+
+  my %Params = %{$_[0]};
+  my $Result = 0;
+
+  $Params{SLA}->{ValidID} = $Params{SLA}->{ValidID} || 1;
+
+  my $RequestBody = {
+    "SLA" => {
+        %{$Params{SLA}}
+    }
+  };
+
+  $Params{Client}->PATCH(
+      "/api/v1/system/slas/".$Params{SLA}->{ID},
+      encode("utf-8",to_json( $RequestBody ))
+  );
+
+  #  update ok...
+  if( $Params{Client}->responseCode() eq "200") {
+    my $Response = from_json( $Params{Client}->responseContent() );
+    $Result = $Response->{SLAID};
+  }
+  else {
+    print STDERR "Updating SLA failed (Response ".$Params{Client}->responseCode().")!";
+    print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
+
+  }
+
+  return $Result;
+
+}
+
+
+
+sub _KIXAPICreateSLA {
+
+  my %Params = %{$_[0]};
+  my $Result = 0;
+
+  $Params{SLA}->{ValidID} = $Params{SLA}->{ValidID} || 1;
+
+  my $RequestBody = {
+    "SLA" => {
+        %{$Params{SLA}}
+    }
+  };
+  $Params{Client}->POST(
+      "/api/v1/system/slas",
+      encode("utf-8", to_json( $RequestBody ))
+  );
+
+  if( $Params{Client}->responseCode() ne "201") {
+    print STDERR "\nCreating SLA failed (Response ".$Params{Client}->responseCode().")!";
+    print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
+
+    $Result = 0;
+  }
+  else {
+    my $Response = from_json( $Params{Client}->responseContent() );
+    $Result = $Response->{SLAID};
+  }
+
+  return $Result;
+
+}
+
+
+
 #-------------------------------------------------------------------------------
 # CONTACT HANDLING FUNCTIONS KIX-API
 sub _KIXAPISearchContact {
@@ -1025,7 +1265,6 @@ sub _KIXAPISearchOrg {
 
 
 
-
 sub _KIXAPIUpdateOrg {
 
   my %Params = %{$_[0]};
@@ -1094,8 +1333,6 @@ sub _KIXAPICreateOrg {
 
 
 
-
-
 #-------------------------------------------------------------------------------
 # CONTACT HANDLING FUNCTIONS KIX-API
 sub _KIXAPIRoleList {
@@ -1134,7 +1371,6 @@ sub _KIXAPIRoleList {
 
   return %Result;
 }
-
 
 
 
@@ -1191,6 +1427,7 @@ sub _KIXAPISearchUser {
 }
 
 
+
 sub _KIXAPIUpdateUser {
 
   my %Params = %{$_[0]};
@@ -1223,6 +1460,7 @@ sub _KIXAPIUpdateUser {
   return $Result;
 
 }
+
 
 
 sub _KIXAPICreateUser {
@@ -1457,6 +1695,54 @@ sub _KIXAPIGeneralCatalogList {
 }
 
 
+#-------------------------------------------------------------------------------
+# CONFIG/SETUP HANDLING FUNCTIONS KIX-API
+sub _KIXAPIValidList {
+
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+
+  $Params{Client}->GET( "/api/v1/system/valid");
+
+  if( $Client->responseCode() ne "200") {
+    print STDERR "\nSearch for valid values failed (Response ".$Client->responseCode().")!\n";
+    exit(-1);
+  }
+  else {
+    my $Response = from_json( $Client->responseContent() );
+    for my $CurrItem ( @{$Response->{Valid}}) {
+      $Result{ $CurrItem->{Name} } = $CurrItem->{ID};
+    }
+  }
+
+  return %Result;
+}
+
+
+
+sub _KIXAPICalendarList {
+
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+
+  for my $Index (1..99) {
+    my $QueryParamStr = 'TimeZone::Calendar'.$Index.'Name';
+    $Params{Client}->GET( "/api/v1/system/config/$QueryParamStr");
+
+    if( $Client->responseCode() ne "200") {
+      last;
+    }
+    else {
+      my $Response = from_json( $Client->responseContent() );
+      my $CurrItem = $Response->{SysConfigOption};
+      $Result{ $CurrItem->{Value} } = $Index;
+    }
+  }
+  return %Result;
+}
+
 
 
 sub _KIXAPIDynamicFieldList {
@@ -1511,6 +1797,8 @@ sub _KIXAPIDynamicFieldList {
   return %Result;
 }
 
+
+
 #-------------------------------------------------------------------------------
 # FILE HANDLING FUNCTIONS
 
@@ -1559,6 +1847,9 @@ sub _ReadSources {
       }
       elsif( $Params{ObjectType} eq 'Organisation' ) {
         next if ( $File !~ m/(.*)Org(.+)\.csv$/ );
+      }
+      elsif( $Params{ObjectType} eq 'SLA' ) {
+        next if ( $File !~ m/(.*)SLA(.+)\.csv$/ );
       }
       else {
         next;
