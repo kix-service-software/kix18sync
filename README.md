@@ -90,7 +90,10 @@ CSVQuote           = "\""
 ----
 ## Sync from CSV-File - kix18.CSVSync.pl
 
-Script `bin/kix18.CSVSync.pl` provides a client for importing data from CSV files to KIX18 REST-API, supporting Contact (including user), Organisation and assets (...latter some day, not yet).
+Script `bin/kix18.CSVSync.pl` provides a client for importing data from CSV files to KIX18 REST-API, supporting
+- Contact (including user)
+- Organisation
+- SLA
 
 Users are created/updated if a data for `Login` is given. Only then further columns such as `Password`, `Roles`, `IsAgent` and `IsCustomer` are considered at all. If there is no user context (`IsAgent` or  `IsCustomer`) set, the users account will be set to `invalid`.  `Roles` must contain **comma-separated names of roles** existing in your KIX. Only roles which match the given usage context (`IsAgent` or  `IsCustomer`) are accepted. Predefined default roles `Agent User` or `Customer` are added automatically by the script depending on the users context (hopefully no one renamed them). Non-existing or misspelled **roles will not be created.**
 
@@ -111,12 +114,12 @@ shell> sudo apt install perl-Text-CSV
 
 
 ### Usage
-`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|Organisation`
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|Organisation|SLA`
 
 The script can be used by referring to a configuration and object type only. Any parameter given by command line overwrites values specified in the config file. Use `kix18.CSVSync.pl --help` for a detailed parameter listing.
 
 - `config`: path to configuration file instead of command line params
-- `ot`: object to be imported (Contact|Organisation)
+- `ot`: object to be imported (Contact|Organisation|SLA)
 - `url`: URL to KIX backend API (e.g. https://t12345-api.kix.cloud)
 - `u`: KIX user login
 - `p`: KIX user password
@@ -134,12 +137,15 @@ Depending on the object type, any CSV files matching name pattern from the input
 - object type `Asset`: name pattern `*Asset*.csv`
 - object type `Contact`: name pattern `*Contact*.csv`
 - object type `Organisation`: name pattern `*Org*.csv`
+- object type `SLA`: name pattern `*SLA*.csv`
+
 
 ### Configuration
 
 Most configuration has to be placed in a separate config file which is read upon script execution. A sample config might look like this:
 
 ```
+# KIX18 params for information retrieval...
 [KIXAPI]
 KIXUserName        = "API-User"
 KIXPassword        = "API-User-Password"
@@ -147,6 +153,7 @@ KIXURL             = http://localhost:20000
 Proxy              = ""
 APITimeOut         = 30
 ObjectType         = ""
+NoSSLVerify        = "1"
 
 # CSV configuration ...
 [CSV]
@@ -161,8 +168,7 @@ CSVQuote           = "\""
 DFArrayCommaSplit  = "1"
 
 # Mapping configuration ...
-
-#Contact.Identifier                   = "Email" - NOT YET IMPLEMENTED
+#NOTE: Contact.Email is used as identifier
 Contact.SearchColIndex               = "1"
 Contact.ColIndex.Login               = "0"
 Contact.ColIndex.Email               = "1"
@@ -188,7 +194,7 @@ Contact.ColIndex.IsAgent             = "17"
 Contact.ColIndex.IsCustomer          = "18"
 Contact.ColIndex.DynamicField_Source = "19"
 
-
+#NOTE: Organisation.Number is used as identifier
 Org.SearchColIndex             = "0"
 Org.ColIndex.Number            = "0"
 Org.ColIndex.Name              = "1"
@@ -198,8 +204,18 @@ Org.ColIndex.City              = "4"
 Org.ColIndex.Zip               = "5"
 Org.ColIndex.Country           = "6"
 Org.ColIndex.Url               = "7"
-Org.ColIndex.ValidID           = "SET:1"
 Org.ColIndex.DynamicField_Type = "8"
+Org.ColIndex.ValidID           = "SET:1"
+
+#NOTE: SLA.Name is used as identifier
+SLA.ColIndex.Name                = "0"
+SLA.ColIndex.Calendar            = "1"
+SLA.ColIndex.ValidID             = "2"
+SLA.ColIndex.Comment             = "3"
+SLA.ColIndex.FirstResponseTime   = "4"
+SLA.ColIndex.FirstResponseNotify = "5"
+SLA.ColIndex.SolutionTime        = "6"
+SLA.ColIndex.SolutionTimeNotify  = "7"
 ```
 
 ----
