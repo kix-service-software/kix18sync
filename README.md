@@ -95,8 +95,6 @@ Script `bin/kix18.CSVSync.pl` provides a client for importing data from CSV file
 - Organisation
 - SLA
 
-...and preparations for assets (just as example - not working).
-
 Users are created/updated if a data for `Login` is given. Only then further columns such as `Password`, `Roles`, `IsAgent` and `IsCustomer` are considered at all. If there is no user context (`IsAgent` or  `IsCustomer`) set, the users account will be set to `invalid`.  `Roles` must contain **comma-separated names of roles** existing in your KIX. Only roles which match the given usage context (`IsAgent` or  `IsCustomer`) are accepted. Predefined default roles `Agent User` or `Customer` are added automatically by the script depending on the users context (hopefully no one renamed them). Non-existing or misspelled **roles will not be created.**
 
 Dynamic Field values are split along comma and submitted as arrays by default, see config file option `DFArrayCommaSplit`.
