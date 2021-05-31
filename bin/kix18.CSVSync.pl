@@ -471,7 +471,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
               IsCustomer => $IsCustomer,
           );
           if( scalar(@RoleIDsArr) ) {
-            $User{RolesIDs} = \@RoleIDsArr;
+            $User{RoleIDs} = \@RoleIDsArr;
           }
           for my $CurrKey ( keys(%User) ) {
               $User{$CurrKey} = undef if( !length($User{$CurrKey}) );
