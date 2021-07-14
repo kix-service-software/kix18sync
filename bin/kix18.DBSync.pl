@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # --
 # bin/kix18.DBSync.pl - imports DB data into KIX18
-# Copyright (C) 2006-2020 c.a.p.e. IT GmbH, http://www.cape-it.de/
+# Copyright (C) 2006-2021 c.a.p.e. IT GmbH, http://www.cape-it.de/
 #
 # written/edited by:
 # * Torsten(dot)Thau(at)cape(dash)it(dot)de
