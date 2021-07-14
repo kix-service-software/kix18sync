@@ -1,13 +1,13 @@
-SLA Name;Calendar Name;Validity;Comment;FirstResponseTime (business minutes);FirstResponseNotify (percent);SolutionTime (business minutes);SolutionNotify (percent)
-5dx9hx8h;;invalid;-;480;50;;
-5dx9hx4h;;valid;Basis;240;25;1440;50
-5dx9hx2h;Calendar Name 1;invalid;;120;25;;
-5dx12hx8h;Calendar Name 2;invalid;;480;50;;
-5dx12hx4h;Calendar Name 3;valid;;240;25;;
-5dx12hx2h;Calendar Name 4;invalid;;120;25;;
-6dx9hx8h;Calendar Name 5;valid;;480;50;;
-6dx9hx4h;Calendar Name 6;invalid;;240;25;;
-Bronze;Calendar Name 9;;;500;50;;
-Silver;Calendar Name 10;;;240;25;;
-Gold;Calendar Name 1;;;240;25;;
-Platinum;Calendar Name 2;;;120;25;;
+"SLA Name";"Calendar Name";"Validity";"Comment";"FirstResponseTime (business minutes)";"FirstResponseNotify (percent)";"SolutionTime (business minutes)";"SolutionNotify (percent)"
+"5dx9hx8h";"";"valid";"-";"480";"50";"1440";""
+"5dx9hx4h";"";"valid";"sample SLA criteria";"240";"25";"1440";"50"
+"5dx9hx2h";"Calendar Name 1";"invalid";"sample SLA criteria";"120";"25";"1440";""
+"5dx12hx8h";"Calendar Name 2";"invalid";"sample SLA criteria";"480";"50";"";""
+"5dx12hx4h";"Calendar Name 3";"valid";"sample SLA criteria";"240";"25";"";""
+"5dx12hx2h";"Calendar Name 4";"invalid";"sample SLA criteria";"120";"25";"";""
+"6dx9hx8h";"Calendar Name 5";"valid";"sample SLA criteria";"480";"50";"";""
+"6dx9hx4h";"Calendar Name 6";"invalid";"sample SLA criteria";"240";"25";"";""
+"Bronze";"Calendar Name 9";"valid";"sample SLA criteria";"500";"50";"";""
+"Silver";"Calendar Name 10";"";"sample SLA criteria";"240";"25";"720";"70"
+"Gold";"Calendar Name 1";"";"sample SLA criteria";"240";"25";"480";"30"
+"Platinum";"Calendar Name 2";"valid";"sample SLA criteria";"120";"25";"240";"20"

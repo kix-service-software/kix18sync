@@ -1,0 +1,4 @@
+Number;Name;Deployment State;Incident State;SectionGeneral::1::Note;SectionGeneral::1::GLN;SectionAddress::1::Street;SectionAddress::1::Street2;SectionAddress::1::City;SectionAddress::1::ZIP;SectionAddress::1::Country;SectionContacts::1::ContactRole::1;SectionContacts::1::ContactRole::1::Contact;SectionServiceCatalog::1::AssignedSLA
+;Campus HS;Production;Operational;;n.a.;Hauptstr. 98;;Musterdorf;23456;Germany;Janitor;contact001@nomail.org;
+;B-Site;Production;Operational;;n.a.;Musterplatz 17;;Musterstadt;12345;Germany;Janitor;contact001@nomail.org;Bronze
+;A-Site;Production;Operational;;n.a.;Musterstr. 123;;Musterstadt;12345;Germany;Janitor;contact001@nomail.org;Bronze

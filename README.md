@@ -114,12 +114,13 @@ shell> sudo apt install perl-Text-CSV
 
 
 ### Usage
-`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|Organisation|SLA`
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|Organisation|SLA|Asset`
 
 The script can be used by referring to a configuration and object type only. Any parameter given by command line overwrites values specified in the config file. Use `kix18.CSVSync.pl --help` for a detailed parameter listing.
 
 - `config`: path to configuration file instead of command line params
-- `ot`: object to be imported (Contact|Organisation|SLA)
+- `ot`: object to be imported (Contact|Organisation|SLA|Asset)
+- `ac`: asset class name (required for asset import)
 - `url`: URL to KIX backend API (e.g. https://t12345-api.kix.cloud)
 - `u`: KIX user login
 - `p`: KIX user password
@@ -217,6 +218,16 @@ SLA.ColIndex.FirstResponseNotify = "5"
 SLA.ColIndex.SolutionTime        = "6"
 SLA.ColIndex.SolutionTimeNotify  = "7"
 ```
+
+### Asset Data Import
+
+There is no need (or chance) to define a custom mapping of CSV-rows to asset-attributes. Therefore, this mapping must be included in CSV files itself by providing a corresponding header line (1st line). You may use exports created by KIX18 GUI asset export as sample or (recommended) just have a look at the provided examples in order to understand how it works. Keep in mind that your asset class definitions may vary from the default settings.
+
+If an asset number is given the script will perform an update, only if the asset number can be found. It **will not** automatically create the asset if the given number is not available. The script **does not** preserve values of previous versions of the updated asset (yet - it implements an "all-or-nothing-update-approach").
+
+If no asset number is given, the script will create a new asset in the asset class defined by parameter `--ac`.
+
+So far there is no default value option for deployment- nor incident-state available.
 
 ----
 ## Sync from Database Source - kix18.DBSync.pl

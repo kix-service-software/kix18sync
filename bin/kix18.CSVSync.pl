@@ -36,11 +36,10 @@ use DBI;
 use Config::Simple;
 use Getopt::Long;
 use Text::CSV;
-use URI::Escape;
 use Pod::Usage;
 use Data::Dumper;
-use REST::Client;
-use JSON;
+
+use KIX18API;
 
 
 # VERSION
@@ -58,6 +57,11 @@ Use kix18.CSVSync.pl  --ot ObjectType* --help [other options]
 =item
 --ot: ObjectType  (Contact|Organisation|SLA)
 =cut
+
+=item
+--ac: AssetClass  (e.g. Computer|Location|Software)
+=cut
+
 
 =item
 --config: path to configuration file instead of command line params
@@ -146,6 +150,7 @@ GetOptions (
   "u=s"        => \$Config{KIXUserName},
   "p=s"        => \$Config{KIXPassword},
   "ot=s"       => \$Config{ObjectType},
+  "ac=s"       => \$Config{AssetClass},
   "i=s"        => \$Config{CSVInputDir},
   "if=s"       => \$Config{CSVInputFile},
   "o=s"        => \$Config{CSVOutputDir},
@@ -212,12 +217,12 @@ exit(-1) if !$CSVDataRef;
 
 
 # log into KIX-Backend API
-my $KIXClient = _KIXAPIConnect( %Config  );
+my $KIXClient = KIX18API::Connect( %Config  );
 exit(-1) if !$KIXClient;
 
 
 # lookup validities...
-my %ValidList = _KIXAPIValidList(
+my %ValidList = KIX18API::ValidList(
   { %Config, Client => $KIXClient}
 );
 my %RevValidList = reverse(%ValidList);
@@ -228,36 +233,187 @@ my $Result = 0;
 
 # import CSV-data...
 my $ResultData = $CSVDataRef;
+
+#-------------------------------------------------------------------------------
+# import Asset Data...
 if ( $Config{ObjectType} eq 'Asset') {
 
+  if ( !$Config{AssetClass} ) {
+    print STDERR "\nAsset import requires asset class parameter - aborting.\n\n";
+    pod2usage( -verbose => 1);
+    exit(-1);
+  }
+
   # lookup asset classes...
-  my %AssetClassList = _KIXAPIGeneralCatalogList(
+  my %AssetClassList = KIX18API::GeneralCatalogList(
     { %Config, Client => $KIXClient, Class => 'ITSM::ConfigItem::Class'}
   );
 
+  $Config{AssetClassID} = $AssetClassList{ $Config{AssetClass} } || '';
+  if ( !$Config{AssetClassID} ) {
+    print STDERR "\nGiven asset class cannot be founde - aborting.\n\n";
+    exit(-1);
+  }
+
   # lookup deployment states...
-  my %DeplStateList = _KIXAPIGeneralCatalogList(
+  my %DeplStateList = KIX18API::GeneralCatalogList(
     { %Config, Client => $KIXClient, Class => 'ITSM::ConfigItem::DeploymentState'}
   );
 
   # lookup incident states...
-  my %InciStateList = _KIXAPIGeneralCatalogList(
+  my %InciStateList = KIX18API::GeneralCatalogList(
     { %Config, Client => $KIXClient, Class => 'ITSM::Core::IncidentState'}
   );
 
-  print STDERR "\nAsset import not supported (yet) - aborting.\n\n";
-  pod2usage( -verbose => 1);
-  exit(-1)
+  my %AssetClassDef = KIX18API::GetAssetClass({
+    %Config,  Client => $KIXClient,
+  });
+
+  # get most recent asset class definition..
+  my $NewestDef = ();
+  my @SortedDefs = sort { $b->{'DefinitionID'} <=> $a->{'DefinitionID'} } @{$AssetClassDef{'Data'}->{'definitions'}};
+  delete( $NewestDef->{'DefinitionString'});
+  $NewestDef = $SortedDefs[0]->{'Definition'};
+
+
+  # process import lines
+  FILE:
+  for my $CurrFile ( keys( %{$CSVDataRef}) ) {
+    my %KeyIndex = ();
+    my $LineCount = 0;
+
+    LINE:
+    for my $CurrLine ( @{$CSVDataRef->{$CurrFile}} ) {
+
+      # get array index for each given attribute key...
+      my %Asset = ();
+      if ( $LineCount < 1) {
+        my $RowIndex = 0;
+        for my $CurrKey( @{$CurrLine} ) {
+          $KeyIndex{ $CurrKey } = $RowIndex;
+          $RowIndex++;
+        }
+
+        $LineCount++;
+        next LINE;
+      }
+
+      # build new asset and version data hash from CSV data...
+      $Asset{'ClassID'} = $Config{AssetClassID} || '';
+
+      my $DataIndex = $KeyIndex{'Number'};
+      $Asset{'Number'} = $CurrLine->[$DataIndex] || '';
+
+      my %VersionData = ();
+
+      $DataIndex = $KeyIndex{'Name'};
+      $Asset{'Version'}->{'Name'} = $CurrLine->[$DataIndex];
+
+      $DataIndex = $KeyIndex{'Deployment State'};
+      my $ImportValue = $CurrLine->[$DataIndex];
+      $Asset{'Version'}->{'DeplStateID'} = $DeplStateList{$ImportValue};
+
+      $DataIndex = $KeyIndex{'Incident State'};
+      $ImportValue = $CurrLine->[$DataIndex];
+      $Asset{'Version'}->{'InciStateID'} = $InciStateList{$ImportValue};
+
+      $Asset{'Version'}->{'Data'} = _BuildAssetVersionData(
+          Definition => $NewestDef,
+          Data       => $Asset{'Version'},
+          KeyIndex   => \%KeyIndex,
+          DataArray  => $CurrLine,
+      );
+
+
+      # search asset for possible update...
+      if( $Asset{'Number'} ) {
+          my %SearchResult = KIX18API::SearchAsset({
+            %Config,
+            Client      => $KIXClient,
+            SearchValue => $Asset{Number} || ''
+          });
+
+          # handle errors...
+          if ( $SearchResult{Msg} ) {
+            push( @{$CurrLine}, 'ERROR');
+            push( @{$CurrLine}, $SearchResult{Msg});
+          }
+
+          # update existing asset...
+          elsif ( $SearchResult{ID} ) {
+            $Asset{ID} = $SearchResult{ID};
+            my $AssetID = KIX18API::UpdateAsset(
+              { %Config, Client => $KIXClient, Asset => \%Asset }
+            );
+
+            if( !$AssetID) {
+              push( @{$CurrLine}, 'ERROR');
+              push( @{$CurrLine}, 'Update failed.');
+            }
+            elsif ( $AssetID == 1 ) {
+              push( @{$CurrLine}, 'no update required');
+              push( @{$CurrLine}, $SearchResult{Msg});
+            }
+            else {
+              push( @{$CurrLine}, 'update');
+              push( @{$CurrLine}, $SearchResult{Msg});
+            }
+
+            print STDOUT "$LineCount: Updated asset <$AssetID> for <"
+              . $Asset{Number}
+              . ">.\n"
+              if( $Config{Verbose} > 2);
+          }
+          else {
+            push( @{$CurrLine}, 'ERROR');
+            push( @{$CurrLine}, 'Update failed (asset <'
+              .$Asset{'Number'}
+              .'> not found).');
+            print STDOUT "$LineCount: asset <"
+              . $Asset{Number}
+              . "> not found doing nothing.\n"
+              if( $Config{Verbose} > 2);
+          }
+      }
+
+      # create new asset...
+      else {
+
+        my $NewAssetID = KIX18API::CreateAsset(
+          { %Config, Client => $KIXClient, Asset => \%Asset }
+        ) || '';
+
+        if ( $NewAssetID ) {
+          push( @{$CurrLine}, 'created');
+          push( @{$CurrLine}, 'AssetID: '.$NewAssetID);
+        }
+        else {
+          push( @{$CurrLine}, 'ERROR');
+          push( @{$CurrLine}, 'Create failed.');
+        }
+
+        print STDOUT "$LineCount: Created asset <$NewAssetID> for <"
+          .($Asset{'Version'}->{'Name'} || '')
+          . ">.\n"
+          if( $Config{Verbose} > 2);
+      }
+
+      $LineCount++;
+
+    }# next LINE;
+
+  }# next FILE;
+
 
 }
 elsif ( $Config{ObjectType} eq 'SLA') {
 
-  my %CalendarList = _KIXAPICalendarList(
+  my %CalendarList = KIX18API::CalendarList(
     { %Config, Client => $KIXClient }
   );
 
   # there is no SLA-search method, so we jsut get all SLAs now...
-  my %SLAList = _KIXAPIListSLA(
+  my %SLAList = KIX18API::ListSLA(
     { %Config, Client => $KIXClient }
   );
 
@@ -324,7 +480,7 @@ elsif ( $Config{ObjectType} eq 'SLA') {
         }
 
         $SLA{ID} = $SLAData{ID};
-        my $Result = _KIXAPIUpdateSLA(
+        my $Result = KIX18API::UpdateSLA(
           { %Config, Client => $KIXClient, SLA => \%SLA }
         );
 
@@ -349,7 +505,7 @@ elsif ( $Config{ObjectType} eq 'SLA') {
       }
       # create new SLA...
       else {
-        my $NewSLAID = _KIXAPICreateSLA(
+        my $NewSLAID = KIX18API::CreateSLA(
           { %Config, Client => $KIXClient, SLA => \%SLA }
         );
 
@@ -379,13 +535,13 @@ elsif ( $Config{ObjectType} eq 'Contact') {
   my %OrgIDCache = ();
 
   # lookup DFs for organizations...
-  my %DFList = _KIXAPIDynamicFieldList(
+  my %DFList = KIX18API::DynamicFieldList(
     { %Config, Client => $KIXClient, ObjectType => 'Contact'}
   );
   my %IgnoredDF = ();
 
   # lookup permission roles...
-  my %RoleList = _KIXAPIRoleList(
+  my %RoleList = KIX18API::RoleList(
     { %Config, Client => $KIXClient}
   );
 
@@ -478,7 +634,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
           }
 
           # search user...
-          my %SearchResult = _KIXAPISearchUser({
+          my %SearchResult = KIX18API::SearchUser({
             %Config,
             Client      => $KIXClient,
             SearchValue => $CurrLine->[$Config{'Contact.ColIndex.Login'}] || '',
@@ -497,7 +653,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
                 $User{UserPw} = $UserPw;
             }
             $User{ID} = $SearchResult{ID};
-            my $UserID = _KIXAPIUpdateUser(
+            my $UserID = KIX18API::UpdateUser(
               { %Config, Client => $KIXClient, User => \%User }
             );
 
@@ -523,7 +679,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
           # create new user...
           else {
             $User{UserPw} = $UserPw;
-            my $NewUserID = _KIXAPICreateUser(
+            my $NewUserID = KIX18API::CreateUser(
               { %Config, Client => $KIXClient, User => \%User }
             ) || '';
             $ContactUserID = $NewUserID;
@@ -567,7 +723,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
       }
       elsif( $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] ) {
 
-        my %OrgID = _KIXAPISearchOrg({
+        my %OrgID = KIX18API::SearchOrg({
           %Config,
           Client      => $KIXClient,
           SearchValue => $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] || '-',
@@ -666,7 +822,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
       }
 
       # search contact...
-      my %SearchResult = _KIXAPISearchContact({
+      my %SearchResult = KIX18API::SearchContact({
         %Config,
         Client      => $KIXClient,
         SearchValue => $CurrLine->[$Config{'Contact.SearchColIndex'}] || '-'
@@ -682,7 +838,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
       # update existing $Contact...
       elsif ( $SearchResult{ID} ) {
         $Contact{ID} = $SearchResult{ID};
-        my $ContactID = _KIXAPIUpdateContact(
+        my $ContactID = KIX18API::UpdateContact(
           { %Config, Client => $KIXClient, Contact => \%Contact }
         );
 
@@ -707,7 +863,7 @@ elsif ( $Config{ObjectType} eq 'Contact') {
       # create new contact...
       else {
 
-        my $NewContactID = _KIXAPICreateContact(
+        my $NewContactID = KIX18API::CreateContact(
           { %Config, Client => $KIXClient, Contact => \%Contact }
         ) || '';
 
@@ -734,9 +890,8 @@ elsif ( $Config{ObjectType} eq 'Contact') {
 elsif ( $Config{ObjectType} eq 'Organisation') {
 
 
-
   # lookup DFs for organizations...
-  my %DFList = _KIXAPIDynamicFieldList(
+  my %DFList = KIX18API::DynamicFieldList(
     { %Config, Client => $KIXClient, ObjectType => 'Organisation'}
   );
   my %IgnoredDF = ();
@@ -835,7 +990,7 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
       }
 
       # search organization...
-      my %SearchResult = _KIXAPISearchOrg({
+      my %SearchResult = KIX18API::SearchOrg({
         %Config,
         Client      => $KIXClient,
         SearchValue => $CurrLine->[$Config{'Org.SearchColIndex'}] || '-'
@@ -850,7 +1005,7 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
       # update existing organisation...
       elsif ( $SearchResult{ID} ) {
         $Organization{ID} = $SearchResult{ID};
-        my $OrgID = _KIXAPIUpdateOrg(
+        my $OrgID = KIX18API::UpdateOrg(
           { %Config, Client => $KIXClient, Organization => \%Organization }
         );
 
@@ -876,7 +1031,7 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
       # create new organisation...
       else {
 
-        my $NewOrgID = _KIXAPICreateOrg(
+        my $NewOrgID = KIX18API::CreateOrg(
           { %Config, Client => $KIXClient, Organization => \%Organization }
         );
 
@@ -916,886 +1071,157 @@ exit(0);
 
 
 
-# ------------------------------------------------------------------------------
-# KIX API Helper FUNCTIONS
-sub _KIXAPIConnect {
-  my (%Params) = @_;
-  my $Result = 0;
-
-  # connect to webservice
-  my $AccessToken = "";
-  my $Headers = {Accept => 'application/json', };
-  my $RequestBody = {
-  	"UserLogin" => $Config{KIXUserName},
-  	"Password" =>  $Config{KIXPassword},
-  	"UserType" => "Agent"
-  };
-
-  my $Client = REST::Client->new(
-    host    => $Config{KIXURL},
-    timeout => $Config{APITimeOut} || 15,
-  );
-  $Client->getUseragent()->proxy(['http','https'], $Config{Proxy});
-
-  if( $Config{NoSSLVerify} ) {
-    $Client->getUseragent()->ssl_opts(verify_hostname => 0);
-    $Client->getUseragent()->ssl_opts(SSL_verify_mode => 0);
-  }
-
-  $Client->POST(
-      "/api/v1/auth",
-      to_json( $RequestBody ),
-      $Headers
-  );
-
-  if( $Client->responseCode() ne "201") {
-    print STDERR "\nCannot login to $Config{KIXURL}/api/v1/auth (user: "
-      .$Config{KIXUserName}.". Response ".$Client->responseCode().")!\n";
-    exit(-1);
-  }
-  else {
-    my $Response = from_json( $Client->responseContent() );
-    $AccessToken = $Response->{Token};
-    print STDOUT "Connected to $Config{KIXURL}/api/v1/ (user: "
-      ."$Config{KIXUserName}).\n" if( $Config{Verbose} > 1);
-
-  }
-
-  $Client->addHeader('Accept', 'application/json');
-  $Client->addHeader('Content-Type', 'application/json');
-  $Client->addHeader('Authorization', "Token ".$AccessToken);
-
-  return $Client;
-}
-
-
-
 
 #-------------------------------------------------------------------------------
-# SLA HANDLING FUNCTIONS KIX-API
-sub _KIXAPIListSLA {
-  my %Params = %{$_[0]};
-  my %Result = ();
-  my $Client = $Params{Client};
-
-  $Params{Client}->GET( "/api/v1/system/slas");
-
-  if( $Client->responseCode() ne "200") {
-    print STDERR "\nSearch for roles failed (Response ".$Client->responseCode().")!\n";
-    exit(-1);
-  }
-  else {
-    my $Response = from_json( $Client->responseContent() );
-    for my $CurrItem ( @{$Response->{SLA}}) {
-      my %SLAData = ();
-      $SLAData{"Calendar"}            = $CurrItem->{"Calendar"};
-      $SLAData{"Comment"}             = $CurrItem->{"Comment"};
-      $SLAData{"FirstResponseNotify"} = $CurrItem->{"FirstResponseNotify"};
-      $SLAData{"FirstResponseTime"}   = $CurrItem->{"FirstResponseTime"};
-      $SLAData{"ID"}                  = $CurrItem->{"ID"};
-      $SLAData{"Internal"}            = $CurrItem->{"Internal"};
-      $SLAData{"Name"}                = $CurrItem->{"Name"};
-      $SLAData{"SolutionNotify"}      = $CurrItem->{"SolutionNotify"};
-      $SLAData{"SolutionTime"}        = $CurrItem->{"SolutionTime"};
-      $SLAData{"ValidID"}             = $CurrItem->{"ValidID"};
-
-      $Result{ $CurrItem->{Name} } = \%SLAData;
-    }
-  }
-
-  return %Result;
-}
-
-
-
-sub _KIXAPIUpdateSLA {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{SLA}->{ValidID} = $Params{SLA}->{ValidID} || 1;
-
-  my $RequestBody = {
-    "SLA" => {
-        %{$Params{SLA}}
-    }
-  };
-
-  $Params{Client}->PATCH(
-      "/api/v1/system/slas/".$Params{SLA}->{ID},
-      encode("utf-8",to_json( $RequestBody ))
-  );
-
-  #  update ok...
-  if( $Params{Client}->responseCode() eq "200") {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{SLAID};
-  }
-  else {
-    print STDERR "Updating SLA failed (Response ".$Params{Client}->responseCode().")!";
-    print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
-
-  }
-
-  return $Result;
-
-}
-
-
-
-sub _KIXAPICreateSLA {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{SLA}->{ValidID} = $Params{SLA}->{ValidID} || 1;
-
-  my $RequestBody = {
-    "SLA" => {
-        %{$Params{SLA}}
-    }
-  };
-  $Params{Client}->POST(
-      "/api/v1/system/slas",
-      encode("utf-8", to_json( $RequestBody ))
-  );
-
-  if( $Params{Client}->responseCode() ne "201") {
-    print STDERR "\nCreating SLA failed (Response ".$Params{Client}->responseCode().")!";
-    print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
-
-    $Result = 0;
-  }
-  else {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{SLAID};
-  }
-
-  return $Result;
-
-}
-
-
-
-#-------------------------------------------------------------------------------
-# CONTACT HANDLING FUNCTIONS KIX-API
-sub _KIXAPISearchContact {
-
-    my %Params = %{$_[0]};
-    my %Result = (
-       ID => 0,
-       Msg => ''
-    );
-    my $Client = $Params{Client};
-
-    my @ResultItemData = qw{};
-    my @Conditions = qw{};
-
-    my $IdentAttr  = $Params{Identifier} || "";
-    my $IdentStrg  = $Params{SearchValue} || "";
-
-    print STDOUT "Search contact by Email EQ '$IdentStrg'"
-      .".\n" if( $Config{Verbose} > 3);
-
-    push( @Conditions,
-      {
-        "Field"    => "Email",
-        "Operator" => "EQ",
-        "Type"     => "STRING",
-        "Value"    => $IdentStrg
-      }
-    );
-
-    my $Query = {};
-    $Query->{Contact}->{AND} =\@Conditions;
-    my @QueryParams = (
-      "search=".uri_escape( to_json( $Query)),
-    );
-    my $QueryParamStr = join( ";", @QueryParams);
-
-    $Params{Client}->GET( "/api/v1/contacts?$QueryParamStr");
-
-    if( $Client->responseCode() ne "200") {
-      $Result{Msg} = "Search for contacts failed (Response ".$Client->responseCode().")!";
-    }
-    else {
-      my $Response = from_json( $Client->responseContent() );
-      if( scalar(@{$Response->{Contact}}) > 1 ) {
-        $Result{Msg} = "More than on item found for identifier.";
-      }
-      elsif( scalar(@{$Response->{Contact}}) == 1 ) {
-        $Result{ID} = $Response->{Contact}->[0]->{ID};
-      }
-    }
-
-   return %Result;
-}
-
-
-
-sub _KIXAPIUpdateContact {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{Contact}->{ValidID} = $Params{Contact}->{ValidID} || 1;
-
-  my $RequestBody = {
-    "Contact" => {
-        %{$Params{Contact}}
-    }
-  };
-
-  $Params{Client}->PATCH(
-      "/api/v1/contacts/".$Params{Contact}->{ID},
-      encode("utf-8",to_json( $RequestBody ))
-    );
-
-  #  update ok...
-  if( $Params{Client}->responseCode() eq "200") {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{ContactID};
-  }
-  else {
-    print STDERR "Updating contact failed (Response ".$Params{Client}->responseCode().")!\n";
-    print STDERR "\nRequestBody: $RequestBody";
-    print STDERR "\nRequestBody: ".Dumper($Params{Contact});
-    exit(-1);
-  }
-
-  return $Result;
-
-}
-
-
-
-sub _KIXAPICreateContact {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{Contact}->{ValidID} = $Params{Contact}->{ValidID} || 1;
-
-  my $RequestBody = {
-    "Contact" => {
-        %{$Params{Contact}}
-    }
-  };
-
-  $Params{Client}->POST(
-      "/api/v1/contacts",
-      encode("utf-8",to_json( $RequestBody ))
-  );
-
-  if( $Params{Client}->responseCode() ne "201") {
-    print STDERR "\nCreating contact failed (Response ".$Params{Client}->responseCode().")!\n";
-    $Result = 0;
-  }
-  else {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{ContactID};
-  }
-
-  return $Result;
-
-}
-
-
-
-#-------------------------------------------------------------------------------
-# ORGANISATION HANDLING FUNCTIONS KIX-API
-sub _KIXAPISearchOrg {
-
-    my %Params = %{$_[0]};
-    my %Result = (
-       ID => 0,
-       Msg => ''
-    );
-    my $Client = $Params{Client};
-
-    my @ResultItemData = qw{};
-    my @Conditions = qw{};
-
-    my $IdentAttr  = $Params{Identifier} || "";
-    my $IdentStrg  = $Params{SearchValue} || "";
-
-    print STDOUT "Search organisation by Number EQ '$IdentStrg'"
-      .".\n" if( $Config{Verbose} > 2);
-
-    push( @Conditions,
-      {
-        "Field"    => "Number",
-        "Operator" => "EQ",
-        "Type"     => "STRING",
-        "Value"    => $IdentStrg
-      }
-    );
-
-    my $Query = {};
-    $Query->{Organisation}->{AND} =\@Conditions;
-    my @QueryParams = qw{};
-    @QueryParams =  ("search=".uri_escape( to_json( $Query)),);
-
-    my $QueryParamStr = join( ";", @QueryParams);
-
-    $Params{Client}->GET( "/api/v1/organisations?$QueryParamStr");
-
-    # this is a q&d workaround for occasionally 500 response which cannot be
-    # explained yet...
-    if( $Client->responseCode() eq "500") {
-      $Params{Client}->GET( "/api/v1/organisations?$QueryParamStr");
-    }
-
-    if( $Client->responseCode() ne "200") {
-      $Result{Msg} = "Search for organisations failed (Response ".$Client->responseCode().")!";
-      exit(0);
-    }
-    else {
-      my $Response = from_json( $Client->responseContent() );
-
-      if( scalar(@{$Response->{Organisation}}) > 1 ) {
-        $Result{Msg} = "More than on item found for identifier.";
-      }
-      elsif( scalar(@{$Response->{Organisation}}) == 1 ) {
-        $Result{ID} = $Response->{Organisation}->[0]->{ID};
-      }
-    }
-   return %Result;
-}
-
-
-
-sub _KIXAPIUpdateOrg {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{Organization}->{ValidID} = $Params{Organization}->{ValidID} || 1;
-
-  my $RequestBody = {
-    "Organisation" => {
-        %{$Params{Organization}}
-    }
-  };
-
-  $Params{Client}->PATCH(
-      "/api/v1/organisations/".$Params{Organization}->{ID},
-      encode("utf-8",to_json( $RequestBody ))
-  );
-
-  #  update ok...
-  if( $Params{Client}->responseCode() eq "200") {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{OrganisationID};
-  }
-  else {
-    print STDERR "Updating contact failed (Response ".$Params{Client}->responseCode().")!\n";
-  }
-
-  return $Result;
-
-}
-
-
-
-sub _KIXAPICreateOrg {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{Organization}->{ValidID} = $Params{Organization}->{ValidID} || 1;
-
-
-  my $RequestBody = {
-    "Organisation" => {
-        %{$Params{Organization}}
-    }
-  };
-
-
-  $Params{Client}->POST(
-      "/api/v1/organisations",
-      encode("utf-8", to_json( $RequestBody ))
-  );
-
-  if( $Params{Client}->responseCode() ne "201") {
-    print STDERR "\nCreating organisation failed (Response ".$Params{Client}->responseCode().")!\n";
-    $Result = 0;
-  }
-  else {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{OrganisationID};
-  }
-
-  return $Result;
-
-}
-
-
-
-#-------------------------------------------------------------------------------
-# CONTACT HANDLING FUNCTIONS KIX-API
-sub _KIXAPIRoleList {
-
-  my %Params = %{$_[0]};
-  my %Result = ();
-  my $Client = $Params{Client};
-
-  $Params{Client}->GET( "/api/v1/system/roles");
-
-  if( $Client->responseCode() ne "200") {
-    print STDERR "\nSearch for roles failed (Response ".$Client->responseCode().")!\n";
-    exit(-1);
-  }
-  else {
-    my $Response = from_json( $Client->responseContent() );
-    for my $CurrItem ( @{$Response->{Role}}) {
-
-      my %RoleData = ();
-      if( $CurrItem->{UsageContextList}
-          && ref($CurrItem->{UsageContextList}) eq 'ARRAY')
-      {
-        %RoleData = map { $_ => 1 } @{$CurrItem->{UsageContextList}};
-      }
-      $RoleData{ID} = $CurrItem->{ID};
-
-      $Result{ $CurrItem->{Name} } = \%RoleData;
-    }
-    # RoleName => {
-    #   ID       => 123, # required
-    #   Agent    => 1,   # optional
-    #   Customer => 1,   # optional
-    # }
-
-  }
-
-  return %Result;
-}
-
-
-
-sub _KIXAPISearchUser {
-
-    my %Params = %{$_[0]};
-    my %Result = (
-       ID => 0,
-       Msg => ''
-    );
-    my $Client = $Params{Client};
-
-    my @ResultItemData = qw{};
-    my @Conditions = qw{};
-
-    my $IdentAttr  = $Params{Identifier} || "";
-    my $IdentStrg  = $Params{SearchValue} || "";
-
-    print STDOUT "Search user by UserLogin EQ '$IdentStrg'"
-      .".\n" if( $Config{Verbose} > 3);
-
-    push( @Conditions,
-      {
-        "Field"    => "UserLogin",
-        "Operator" => "EQ",
-        "Type"     => "STRING",
-        "Value"    => $IdentStrg
-      }
-    );
-
-    my $Query = {};
-    $Query->{User}->{AND} =\@Conditions;
-    my @QueryParams = (
-      "search=".uri_escape( to_json( $Query)),
-    );
-    my $QueryParamStr = join( ";", @QueryParams);
-
-    $Params{Client}->GET( "/api/v1/system/users?$QueryParamStr");
-
-    if( $Client->responseCode() ne "200") {
-      $Result{Msg} = "Search for users failed (Response ".$Client->responseCode().")!";
-    }
-    else {
-      my $Response = from_json( $Client->responseContent() );
-      if( scalar(@{$Response->{User}}) > 1 ) {
-        $Result{Msg} = "More than on item found for identifier.";
-      }
-      elsif( scalar(@{$Response->{User}}) == 1 ) {
-        $Result{ID} = $Response->{User}->[0]->{UserID};
-      }
-    }
-
-   return %Result;
-}
-
-
-
-sub _KIXAPIUpdateUser {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{User}->{ValidID} = $Params{User}->{ValidID} || 1;
-
-  my $RequestBody = {
-    "User" => {
-        %{$Params{User}}
-    }
-  };
-
-  $Params{Client}->PATCH(
-      "/api/v1/system/users/".$Params{User}->{ID},
-      encode("utf-8",to_json( $RequestBody ))
-  );
-
-  #  update ok...
-  if( $Params{Client}->responseCode() eq "200") {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{UserID};
-  }
-  else {
-    print STDERR "Updating user failed (Response ".$Params{Client}->responseCode().")!";
-    print STDERR "\ndata submitted: ".Dumper($RequestBody)."\n";
-
-  }
-
-  return $Result;
-
-}
-
-
-
-sub _KIXAPICreateUser {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  $Params{User}->{ValidID} = $Params{User}->{ValidID} || 1;
-
-  my $RequestBody = {
-    "User" => {
-        %{$Params{User}}
-    }
-  };
-  $Params{Client}->POST(
-      "/api/v1/system/users",
-      encode("utf-8", to_json( $RequestBody ))
-  );
-
-  if( $Params{Client}->responseCode() ne "201") {
-    print STDERR "\nCreating user failed (Response ".$Params{Client}->responseCode().")!";
-    print STDERR "\ndata submitted: ".Dumper($RequestBody)."\n";
-
-    $Result = 0;
-  }
-  else {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{UserID};
-  }
-
-  return $Result;
-
-}
-
-
-
-#-------------------------------------------------------------------------------
-# ASSET HANDLING FUNCTIONS KIX-API
-sub _KIXXAPISearchAsset {
-
-    my %Params = %{$_[0]};
-    my %Result = (
-       ID => 0,
-       Msg => ''
-    );
-    my $Client = $Params{Client};
-
-    my @ResultItemData = qw{};
-    my @Conditions = qw{};
-
-    my $IdentAttr  = $Params{Identifier} || "";
-    my $IdentStrg  = $Params{SearchValue} || "";
-
-    print STDOUT "Search asset by Number EQ '$IdentStrg' or "
-      ." <$IdentAttr> EQ '$IdentStrg'"
-      .".\n" if( $Config{Verbose} > 3);
-
-    push( @Conditions,
-      {
-        "Field"    => "Number",
-        "Operator" => "EQ",
-        "Type"     => "STRING",
-        "Value"    => $IdentStrg
-      }
-    );
-    push( @Conditions,
-      {
-        "Field"    => $IdentAttr,
-        "Operator" => "EQ",
-        "Type"     => "STRING",
-        "Value"    => $IdentStrg
-      }
-    );
-
-    my $Query = {};
-    $Query->{ConfigItem}->{OR} =\@Conditions;
-    my @QueryParams = (
-      "search=".uri_escape( to_json( $Query)),
-    );
-    my $QueryParamStr = join( ";", @QueryParams);
-
-    $Params{Client}->GET( "/api/v1/cmdb/configitems?$QueryParamStr");
-
-    if( $Client->responseCode() ne "200") {
-      $Result{Msg} = "Search for asset failed (Response ".$Client->responseCode().")!";
-    }
-    else {
-
-      my $Response = from_json( $Client->responseContent() );
-      if( scalar(@{$Response->{ConfigItem}}) > 1 ) {
-        $Result{Msg} = "More than on item found for identifier.";
-      }
-      elsif( scalar(@{$Response->{ConfigItem}}) == 1 ) {
-        $Result{ID} = $Response->{ConfigItem}->[0]->{ConfigItemID};
-      }
-    }
-
-   return %Result;
-}
-
-
-
-sub _KIXAPIUpdateAsset {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  my $RequestBody = {
-    "ConfigItemVersion" => {
-      "DeplStateID" => $Params{Asset}->{DeplStateID},
-      "InciStateID" => $Params{Asset}->{InciStateID},
-      "Name"        => $Params{Asset}->{Name},
-      "Data" => {
-
-        # this is the part which is CI-class specific, e.g.
-        "SectionGeneral" => {
-          "ExternalInvNo" => $Params{Asset}->{ExtInvNumber},
-          "Vendor"        => $Params{Asset}->{VendorName},
-          "Model"         => $Params{Asset}->{ModelName},
+# ASSET DATA HANDLING FUNCTIONS
+sub _BuildAssetVersionData {
+    my ( %Param ) = @_;
+    return if !$Param{Definition};
+    return if ref $Param{Definition} ne 'ARRAY';
+    return if !$Param{KeyIndex};
+    return if ref $Param{KeyIndex} ne 'HASH';
+    return if !$Param{DataArray};
+    return if ref $Param{DataArray} ne 'ARRAY';
+    my %Result = ();
+
+    $Param{KeyPrefix} = $Param{KeyPrefix} || '';
+
+    ITEM:
+    for my $Item ( @{ $Param{Definition} } ) {
+
+        my $IsArray = defined( $Item->{CountMin}) || defined($Item->{CountMax});
+        my $IsHash = defined($Item->{Sub});
+        my $CountMax = $Item->{CountMax} || 1;
+
+        $Result{$Item->{Key}} = undef;
+
+        COUNT:
+        for my $Count ( 1 .. $CountMax ) {
+
+            # create key string
+            my $Key = $Item->{Key} . '::' . $Count;
+            if ( $Param{KeyPrefix} ) {
+                $Key = $Param{KeyPrefix} . '::' . $Key;
+            }
+
+            # get CSV array index for key...
+            my $DataIndex = $Param{KeyIndex}->{$Key};
+            if( !$DataIndex ) {
+              $DataIndex = $Param{KeyIndex}->{ $Param{KeyPrefix} . '::'. $Item->{Key}};
+            }
+
+            # get data from CSV line...
+            my $Value = '';
+            if( $DataIndex && $Param{DataArray}->[$DataIndex] ) {
+              $Value = $Param{DataArray}->[$DataIndex];
+            }
+
+            # lookup values for specific attribute types...
+            if( $Value && $Item->{Input}->{Type}
+              && $Item->{Input}->{Type} !~ /^Text/
+              && $Config{Verbose} > 4)
+            {
+              print STDOUT "\n\tLookup value <$Value> for key <$Item->{Key}> of "
+                ."type <$Item->{Input}->{Type}>. ";
+            }
+            if( $Value && $Item->{Input}->{Type} eq 'Organisation') {
+
+              my %SearchResult = KIX18API::SearchOrg({
+                %Config, Client => $KIXClient, SearchValue => $Value,
+              });
+              if ( $SearchResult{ID} ) {
+                $Value = $SearchResult{ID};
+                print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+              }
+
+            }
+            elsif( $Value && $Item->{Input}->{Type} eq 'Contact') {
+
+              my %SearchResult = KIX18API::SearchContact({
+                %Config, Client => $KIXClient, SearchValue => $Value
+              });
+              if ( $SearchResult{ID} ) {
+                $Value = $SearchResult{ID};
+                print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+              }
+
+            }
+            elsif( $Value && $Item->{Input}->{Type} eq 'GeneralCatalog') {
+
+              $Value = KIX18API::GeneralCatalogValueLookup({
+                %Config,
+                Client => $KIXClient,
+                Class => $Item->{Input}->{Class},
+                Value => $Value
+              }) || $Value;
+              print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+
+            }
+            elsif( $Value && $Item->{Input}->{Type} eq 'CIClassReference') {
+
+              my %SearchResult = KIX18API::SearchAsset({
+                %Config,
+                Client      => $KIXClient,
+                Identifier  => "Name",
+                SearchValue => "$Value",
+              });
+              if ( $SearchResult{ID} && !$Result{Msg} ) {
+                  $Value = $SearchResult{ID};
+                  print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+              }
+
+            }
+            elsif( $Value && $Item->{Input}->{Type} eq 'SLAReference') {
+
+              $Value = KIX18API::SLAValueLookup({
+                %Config,
+                Client => $KIXClient,
+                Name   => $Value
+              }) || $Value;
+              print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+
+            }
+
+            my %SubData = ();
+            if( $Item->{Sub} ) {
+              my $SubDefRef = $Item->{Sub};
+
+              %SubData = %{_BuildAssetVersionData(
+                  %Param,
+                  Definition => $SubDefRef,
+                  KeyPrefix  => $Key,
+              )};
+            }
+
+            # ignore/drop empty values...
+            if( $IsArray && $IsHash && keys(%SubData)) {
+              if( $Value ) {
+                $SubData{$Item->{Key}} = $Value;
+              }
+              $Result{$Item->{Key}}->[$Count-1] = \%SubData;
+
+            }
+            elsif( $IsArray && $Value) {
+              $Result{$Item->{Key}}->[$Count-1] = $Value;
+            }
+            elsif( $IsHash && keys(%SubData)) {
+              $Result{$Item->{Key}} = \%SubData;
+            }
+            elsif( $Value ) {
+              $Result{$Item->{Key}} = $Value;
+            }
         }
-      }
+
+        # drop empty values...
+        delete( $Result{$Item->{Key}} ) if (!$Result{$Item->{Key}});
     }
-  };
 
-  $Params{Client}->POST(
-      "/api/v1/cmdb/configitems/".$Params{Asset}->{ID}."/versions",
-      encode("utf-8", to_json( $RequestBody ))
-  );
 
-  # no update required...
-  if( $Params{Client}->responseCode() eq "200") {
-    $Result = 1
-  }
-  # new version added...
-  elsif( $Params{Client}->responseCode() eq "201") {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{VersionID};
-  }
-  else {
-    print STDERR "Updating asset failed (Response ".$Params{Client}->responseCode().")!\n";
-  }
-
-  return $Result;
-
+    return \%Result;
 }
 
 
 
-sub _KIXAPICreateAsset {
-
-  my %Params = %{$_[0]};
-  my $Result = 0;
-
-  my $RequestBody = {
-  	"ConfigItem" => {
-      "ClassID" => $Params{Asset}->{AssetClassID},
-      "Version" => {
-        "DeplStateID" => $Params{Asset}->{DeplStateID},
-        "InciStateID" => $Params{Asset}->{InciStateID},
-        "Name"        => $Params{Asset}->{Name},
-        "Data" => {
-          # this is the part which is CI-class specific, e.g.
-          "SectionGeneral" => {
-            "ExternalInvNo" => $Params{Asset}->{ExtInvNumber},
-            "Vendor"        => $Params{Asset}->{VendorName},
-            "Model"         => $Params{Asset}->{ModelName},
-          }
-        }
-      }
-    }
-  };
-
-  $Params{Client}->POST(
-      "/api/v1/cmdb/configitems",
-      encode("utf-8", to_json( $RequestBody ))
-  );
-
-  if( $Params{Client}->responseCode() ne "201") {
-    print STDERR "\nCreating asset failed (Response ".$Params{Client}->responseCode().")!\n";
-    $Result = 0;
-  }
-  else {
-    my $Response = from_json( $Params{Client}->responseContent() );
-    $Result = $Response->{ConfigItemID};
-  }
-
-  return $Result;
-
-}
-
-
-
-sub _KIXAPIGeneralCatalogList {
-
-  my %Params = %{$_[0]};
-  my %Result = ();
-  my $Client = $Params{Client};
-  my $Class  = $Params{Class} || "-";
-  my $Valid  = $Params{Valid} || "valid";
-
-  my @Conditions = qw{};
-  push( @Conditions,
-    {
-      "Field"    => "Class",
-      "Operator" => "EQ",
-      "Type"     => "STRING",
-      "Value"    => $Class
-    }
-  );
-
-  my $Query = {};
-  $Query->{GeneralCatalogItem}->{AND} =\@Conditions;
-  my @QueryParams = (
-    "filter=".uri_escape( to_json( $Query)),
-  );
-  my $QueryParamStr = join( ";", @QueryParams);
-
-  $Params{Client}->GET( "/api/v1/system/generalcatalog?$QueryParamStr");
-
-  if( $Client->responseCode() ne "200") {
-    print STDERR "\nSearch for GC class failed (Response ".$Client->responseCode().")!\n";
-    exit(-1);
-  }
-  else {
-    my $Response = from_json( $Client->responseContent() );
-    for my $CurrItem ( @{$Response->{GeneralCatalogItem}}) {
-      $Result{ $CurrItem->{Name} } = $CurrItem->{ItemID};
-    }
-  }
-
-  return %Result;
-}
-
-
-#-------------------------------------------------------------------------------
-# CONFIG/SETUP HANDLING FUNCTIONS KIX-API
-sub _KIXAPIValidList {
-
-  my %Params = %{$_[0]};
-  my %Result = ();
-  my $Client = $Params{Client};
-
-  $Params{Client}->GET( "/api/v1/system/valid");
-
-  if( $Client->responseCode() ne "200") {
-    print STDERR "\nSearch for valid values failed (Response ".$Client->responseCode().")!\n";
-    exit(-1);
-  }
-  else {
-    my $Response = from_json( $Client->responseContent() );
-    for my $CurrItem ( @{$Response->{Valid}}) {
-      $Result{ $CurrItem->{Name} } = $CurrItem->{ID};
-    }
-  }
-
-  return %Result;
-}
-
-
-
-sub _KIXAPICalendarList {
-
-  my %Params = %{$_[0]};
-  my %Result = ();
-  my $Client = $Params{Client};
-
-  for my $Index (1..99) {
-    my $QueryParamStr = 'TimeZone::Calendar'.$Index.'Name';
-    $Params{Client}->GET( "/api/v1/system/config/$QueryParamStr");
-
-    if( $Client->responseCode() ne "200") {
-      last;
-    }
-    else {
-      my $Response = from_json( $Client->responseContent() );
-      my $CurrItem = $Response->{SysConfigOption};
-      $Result{ $CurrItem->{Value} } = $Index;
-    }
-  }
-  return %Result;
-}
-
-
-
-sub _KIXAPIDynamicFieldList {
-
-  my %Params = %{$_[0]};
-  my %Result = ();
-  my $Client = $Params{Client};
-  my $Class  = $Params{ObjectType} || "-";
-
-  my @Conditions = qw{};
-  if( $Params{ObjectType} ) {
-    push( @Conditions,
-      {
-        "Field"    => "ObjectType",
-        "Operator" => "EQ",
-        "Type"     => "STRING",
-        "Value"    => $Params{ObjectType},
-      }
-    );
-  }
-
-  my $Query = {};
-  my $QueryParamStr = "";
-
-  if( @Conditions ) {
-    $Query->{DynamicField}->{AND} =\@Conditions;
-    my @QueryParams = (
-      "filter=".uri_escape( to_json( $Query)),
-      "include=Config"
-    );
-    $QueryParamStr = join( ";", @QueryParams);
-  }
-
-  $Params{Client}->GET( "/api/v1/system/dynamicfields?$QueryParamStr");
-
-  if( $Client->responseCode() ne "200") {
-    print STDERR "\nSearch for DF failed (Response ".$Client->responseCode().")!\n";
-    exit(-1);
-  }
-  else {
-    my $Response = from_json( $Client->responseContent() );
-    for my $CurrItem ( @{$Response->{DynamicField}}) {
-      $Result{ $CurrItem->{Name} } = {
-        ID         => $CurrItem->{ID},
-        FieldType  => $CurrItem->{FieldType},
-        ObjectType => $CurrItem->{ObjectType},
-        Config     => $CurrItem->{Config},
-      };
-    }
-  }
-
-  return %Result;
-}
 
 
 
@@ -1929,6 +1355,7 @@ sub _WriteResult {
   }
 
 }
+
 
 
 1;

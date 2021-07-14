@@ -1,0 +1,3 @@
+Number;Name;Deployment State;Incident State;Type;Description;NetworkAddress::1;NetworkAddress::1::SubnetMask;NetworkAddress::1::Gateway::1;Note;SectionServiceCatalog::1::AssignedSLA
+;wlan.example.com;Planned;Operational;WLAN;;192.168.128.0;255.255.255.0;192.168.128.1;;Silver
+;office.example.com;Planned;Operational;LAN;;192.168.10.0;255.255.255.0;192.168.10.1;;Platinum
