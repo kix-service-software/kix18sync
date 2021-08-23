@@ -114,12 +114,12 @@ shell> sudo apt install perl-Text-CSV
 
 
 ### Usage
-`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|Organisation|SLA|Asset`
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|Organisation|SLA|Asset|Queue`
 
 The script can be used by referring to a configuration and object type only. Any parameter given by command line overwrites values specified in the config file. Use `kix18.CSVSync.pl --help` for a detailed parameter listing.
 
 - `config`: path to configuration file instead of command line params
-- `ot`: object to be imported (Contact|Organisation|SLA|Asset)
+- `ot`: object to be imported (Contact|Organisation|SLA|Asset|Queue)
 - `ac`: asset class name (required for asset import)
 - `url`: URL to KIX backend API (e.g. https://t12345-api.kix.cloud)
 - `u`: KIX user login
@@ -139,6 +139,7 @@ Depending on the object type, any CSV files matching name pattern from the input
 - object type `Contact`: name pattern `*Contact*.csv`
 - object type `Organisation`: name pattern `*Org*.csv`
 - object type `SLA`: name pattern `*SLA*.csv`
+- object type `Queue`: name pattern `*Queue*.csv`
 
 
 ### Configuration
@@ -217,17 +218,34 @@ SLA.ColIndex.FirstResponseTime   = "4"
 SLA.ColIndex.FirstResponseNotify = "5"
 SLA.ColIndex.SolutionTime        = "6"
 SLA.ColIndex.SolutionTimeNotify  = "7"
+
+#NOTE: Queue.FullQueueName is used as identifier
+Queue.ColIndex.FullQueueName      = "0"
+Queue.ColIndex.Calendar           = "1"
+Queue.ColIndex.Comment            = "3"
+Queue.ColIndex.FollowUpID         = "4"
+Queue.ColIndex.ParentID           = "5"
+Queue.ColIndex.RealName           = "6"
+Queue.ColIndex.SystemAddress      = "7"
+Queue.ColIndex.UnlockTimeOut      = "8"
+Queue.ColIndex.ValidID            = "2"
 ```
 
 ### Asset Data Import
 
 There is no need (or chance) to define a custom mapping of CSV-rows to asset-attributes. Therefore, this mapping must be included in CSV files itself by providing a corresponding header line (1st line). You may use exports created by KIX18 GUI asset export as sample or (recommended) just have a look at the provided examples in order to understand how it works. Keep in mind that your asset class definitions may vary from the default settings.
 
-If an asset number is given the script will perform an update, only if the asset number can be found. It **will not** automatically create the asset if the given number is not available. The script **does not** preserve values of previous versions of the updated asset (yet - it implements an "all-or-nothing-update-approach").
+If an asset number is given the script will perform an update, only if the asset number can be found. It **will not** automatically create the asset if the given number is not available. The script **does not** preserve values of previous versions of the updated asset (...yet. it implements an "all-or-nothing-update-approach"). So far there is no default value option for deployment- nor incident-state available.
 
 If no asset number is given, the script will create a new asset in the asset class defined by parameter `--ac`.
 
-So far there is no default value option for deployment- nor incident-state available.
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData04_Computer_Sample.csv --ac Computer`
+
+
+### Queue vs. Teams?
+
+KIX18 uses a more understandable wording for "queues" which are some sort of assignee groups to which tickets are assigned. A group of people working together to solve incidents, answer requests or plan changes. One could call these people "a team". However, due to historic reasons the original naming "queues" is still used in the API. Therefore and for us being a bit anachronistic, we stick to "queues" in this import script as well... ;-).
+
 
 ----
 ## Sync from Database Source - kix18.DBSync.pl
@@ -344,3 +362,8 @@ DynamicField_Type = "type"
 ```
 
 PS: the DB-structure for this example in MariaDB/MySQL is contained in `sample/MyCRMDB.sql`
+
+----
+## Contributors
+
+- David Bormann (Queue/Teams import)

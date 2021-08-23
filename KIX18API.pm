@@ -748,8 +748,6 @@ sub CreateAsset {
     'ConfigItem' => $Params{'Asset'},
   };
 
-#print STDERR "\n SubmitBody".Dumper($RequestBody)."...";
-
   $Params{Client}->POST(
       "/api/v1/cmdb/configitems",
       encode("utf-8", to_json( $RequestBody ))
@@ -863,7 +861,7 @@ sub ValidList {
 
 
 sub CalendarList {
-
+    
   my %Params = %{$_[0]};
   my %Result = ();
   my $Client = $Params{Client};
@@ -939,7 +937,197 @@ sub DynamicFieldList {
 }
 
 
+#-------------------------------------------------------------------------------
+# Queue HANDLING FUNCTIONS KIX-API
+sub QueueValueLookup {
+    my %Params = %{$_[0]};
+    my $Result = "";
+    my $Client = $Params{Client};
+
+    my %QueueList = ListQueue(
+        { %Config, Client => $Client }
+    );
+
+    if( $Params{Name} && $QueueList{ $Params{Name} } ) {
+        $Result = $QueueList{$Params{Name}}->{ID};
+    }
+
+    return $Result;
+}
+
+sub ListQueue {
+    my %Params = %{$_[0]};
+    my %Result = ();
+    my $Client = $Params{Client};
+
+    $Client->GET( "/api/v1/system/ticket/queues");
+
+    if( $Client->responseCode() ne "200") {
+        print STDERR "\nSearch for Queues failed (Response ".$Client->responseCode().")!\n";
+        exit(-1);
+    }
+    else {
+        my $Response = from_json( $Client->responseContent() );
+        for my $CurrItem ( @{$Response->{Queue}}) {
+            my %QueueData = ();
+            $QueueData{"Calendar"}            = $CurrItem->{"Calendar"};
+            $QueueData{"Comment"}             = $CurrItem->{"Comment"};
+            $QueueData{"FollowUpID"}          = $CurrItem->{"FollowUpID"};
+            $QueueData{"ParentID"}            = $CurrItem->{"ParentID"};
+            $QueueData{"ID"}                  = $CurrItem->{"QueueID"};
+            $QueueData{"Fullname"}            = $CurrItem->{"Fullname"};
+            $QueueData{"Name"}                = $CurrItem->{"Name"};
+            $QueueData{"SystemAddressID"}      = $CurrItem->{"SystemAddressID"};
+            $QueueData{"UnlockTimeOut"}        = $CurrItem->{"UnlockTimeOut"};
+            $QueueData{"ValidID"}             = $CurrItem->{"ValidID"};
+
+            $Result{ $CurrItem->{Fullname} } = \%QueueData;
+        }
+    }
+
+    return %Result;
+}
 
 
+
+sub UpdateQueue {
+
+    my %Params = %{$_[0]};
+    my $Result = 0;
+
+    $Params{Queue}->{ValidID} = $Params{Queue}->{ValidID} || 1;
+
+    my $RequestBody = {
+        "Queue" => {
+            %{$Params{Queue}}
+        }
+    };
+
+    $Params{Client}->PATCH(
+        "/api/v1/system/ticket/queues/".$Params{Queue}->{ID},
+        encode("utf-8",to_json( $RequestBody ))
+    );
+
+    #  update ok...
+    if( $Params{Client}->responseCode() eq "200") {
+        my $Response = from_json( $Params{Client}->responseContent() );
+        $Result = $Response->{QueueID};
+    }
+    else {
+        print STDERR "Updating Queue failed (Response ".$Params{Client}->responseCode().")!";
+        print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
+
+    }
+
+    return $Result;
+
+}
+
+
+sub CreateQueue {
+
+    my %Params = %{$_[0]};
+    my $Result = 0;
+
+    $Params{Queue}->{ValidID} = $Params{Queue}->{ValidID} || 1;
+
+    my $RequestBody = {
+        "Queue" => {
+            %{$Params{Queue}}
+        }
+    };
+
+    $Params{Client}->POST(
+        "/api/v1/system/ticket/queues",
+        encode("utf-8", to_json( $RequestBody ))
+    );
+
+    if( $Params{Client}->responseCode() ne "201") {
+        print STDERR "\nCreating Queue failed (Response ".$Params{Client}->responseCode().")!";
+        print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
+
+        $Result = 0;
+    }
+    else {
+        my $Response = from_json( $Params{Client}->responseContent() );
+        $Result = $Response->{QueueID};
+    }
+
+    return $Result;
+
+}
+
+sub SystemAddressValueLookup {
+    my %Params = %{$_[0]};
+    my $Result = "";
+    my $Client = $Params{Client};
+
+    my %SystemAddressList = ListSystemAddress(
+        { %Config, Client => $Client }
+    );
+
+
+    if( $Params{Name} && $SystemAddressList{ $Params{Name} } ) {
+        $Result = $SystemAddressList{ $Params{Name}}->{ID};
+    }
+
+    return $Result;
+}
+
+sub ListSystemAddress {
+    my %Params = %{$_[0]};
+    my %Result = ();
+    my $Client = $Params{Client};
+
+    $Client->GET( "/api/v1/system/communication/systemaddresses");
+
+    if( $Client->responseCode() ne "200") {
+        print STDERR "\nSearch for SystemAdresses failed (Response ".$Client->responseCode().")!\n";
+        exit(-1);
+    }
+    else {
+        my $Response = from_json( $Client->responseContent() );
+        for my $CurrItem ( @{$Response->{SystemAddress}}) {
+            my %SystemAddressData = ();
+            $SystemAddressData{"ID"}            = $CurrItem->{"ID"};
+            $SystemAddressData{"Name"}          = $CurrItem->{"Name"};
+            $Result{ $CurrItem->{Name} } = \%SystemAddressData;
+        }
+    }
+
+    return %Result;
+}
+
+sub CreateSystemAddress {
+
+    my %Params = %{$_[0]};
+    my $Result = 0;
+
+    $Params{SystemAddress}->{ValidID} = $Params{SystemAddress}->{ValidID} || 1;
+
+    my $RequestBody = {
+        "SystemAddress" => {
+            %{$Params{SystemAddress}}
+        }
+    };
+    $Params{Client}->POST(
+        "/api/v1/system/communication/systemaddresses",
+        encode("utf-8", to_json( $RequestBody ))
+    );
+
+    if( $Params{Client}->responseCode() ne "201") {
+        print STDERR "\nCreating SystemAddress failed (Response ".$Params{Client}->responseCode().")!";
+        print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
+
+        $Result = 0;
+    }
+    else {
+        my $Response = from_json( $Params{Client}->responseContent() );
+        $Result = $Response->{SystemAddressID};
+    }
+
+    return $Result;
+
+}
 
 1;
