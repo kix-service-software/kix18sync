@@ -1054,6 +1054,204 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
   }
 
 }
+elsif ( $Config{ObjectType} eq 'Queue') {
+
+  my %CalendarList = KIX18API::CalendarList(
+      { %Config, Client => $KIXClient }
+  );
+
+  my %SystemAddressList = KIX18API::ListSystemAddress(
+      { %Config, Client => $KIXClient }
+  );
+
+  # there is no SLA-search method, so we jsut get all SLAs now...
+  my %QueueList = KIX18API::ListQueue(
+      { %Config, Client => $KIXClient }
+  );
+
+  # process import lines
+  FILE:
+  for my $CurrFile (keys(%{$CSVDataRef})) {
+
+    my $LineCount = 0;
+
+    LINE:
+    for my $CurrLine (@{$CSVDataRef->{$CurrFile}}) {
+
+      # skip first line (ignore header)...
+      if ($LineCount < 1) {
+        $LineCount++;
+        next;
+      }
+
+      # prepare validity..
+      my $QueueValidId = 1;
+      if ($Config{'Queue.ColIndex.ValidID'} =~ /^SET\:(.+)/) {
+        $QueueValidId = $1;
+      }
+      else {
+        $QueueValidId = $CurrLine->[$Config{'Queue.ColIndex.ValidID'}];
+      }
+      if ($QueueValidId !~ /^\d+$/ && $RevValidList{ $QueueValidId }) {
+        $QueueValidId = $RevValidList{ $QueueValidId } || '';
+      }
+      else {
+        $QueueValidId = "";
+      };
+
+      # create Queue data hash/map from CSV data...
+      my %Queue = (
+          Name            => ($CurrLine->[$Config{'Queue.ColIndex.FullQueueName'}] || ''),
+          Calendar        => ($CurrLine->[$Config{'Queue.ColIndex.Calendar'}] || ''),
+          FollowUpID      => ($CurrLine->[$Config{'Queue.ColIndex.FollowUpID'}] || ''),
+          SystemAddressID => ($CurrLine->[$Config{'Queue.ColIndex.SystemAddress'}] || ''),
+          UnlockTimeOut   => ($CurrLine->[$Config{'Queue.ColIndex.UnlockTimeOut'}] || ''),
+          Comment         => ($CurrLine->[$Config{'Queue.ColIndex.Comment'}] || ''),
+          ValidID         => $QueueValidId,
+      );
+
+      # replace calendar name by calendar index...
+      $Queue{Calendar} = $CalendarList{$Queue{Calendar}} || '';
+      # splitt Queue in Array by sperator ::
+      my @Queues =  split('::', $Queue{Name});
+
+      #count Entry of Array
+      my $QueueEntrys = scalar(@Queues);
+
+      if ($QueueEntrys > 1 ) {
+
+        # save Queue-Name
+        my $QueueName = $Queues[-1];
+
+        #set Queue-Name
+        $Queue{Name} = $QueueName;
+
+        # extract parent queue
+        pop(@Queues);
+        my  $ParentQueue = join( "::", @Queues);
+
+        # cleanup empty values...
+        for my $CurrKey (keys(%Queue)) {
+          $Queue{$CurrKey} = undef if (!length($Queue{$CurrKey}));
+        }
+
+        # resolve ParentQueueID by Queue Name
+        my $ParentQueueID = KIX18API::QueueValueLookup({
+            %Config,
+            Client => $KIXClient,
+            Name   => $ParentQueue
+        }) || '';
+
+        # replace QueueName with ID
+        $Queue{ParentID} = $ParentQueueID;
+
+      } else {
+
+        # save Queue-Name
+        my $QueueName = $Queues[-1];
+        #set Queue-Name
+        $Queue{Name} = $QueueName;
+      }
+
+      # get SystemID by Name
+      # use lower case fpr email addresses..
+      $Queue{SystemAddressID} = lc($Queue{SystemAddressID});
+      my $SystemAddressID = KIX18API::SystemAddressValueLookup({
+          %Config,
+          Client => $KIXClient,
+          Name   => $Queue{SystemAddressID}
+      }) || '';
+
+      # set SystemAddress
+      if ($SystemAddressID) {
+        # replace SystemAddress Name by id
+        $Queue{SystemAddressID} = $SystemAddressID || '';
+      }
+      else {
+
+        # build Hash
+        my %SystemAddress = (
+            Name     => $Queue{SystemAddressID},
+            Realname => => $Queue{SystemAddressID},
+            ValidID  => => 1
+        );
+
+        # create Systemaddress
+        my $NewSystemAddressID = KIX18API::CreateSystemAddress(
+            { %Config, Client => $KIXClient, SystemAddress => \%SystemAddress }
+        );
+
+        if ($NewSystemAddressID) {
+          push(@{$CurrLine}, 'created');
+          push(@{$CurrLine}, $NewSystemAddressID);
+        }
+        else {
+          push(@{$CurrLine}, 'ERROR');
+          push(@{$CurrLine}, 'Create failed.');
+        }
+
+        $Queue{SystemAddressID} = $NewSystemAddressID || '';
+
+        print STDOUT "$LineCount: Created Queue <$NewSystemAddressID / "
+            . $Queue{Name} . ">.\n"
+            if ($Config{Verbose} > 2);
+      }
+
+      # update existing Queue...
+      if ($QueueList{ $CurrLine->[$Config{'Queue.ColIndex.FullQueueName'}]}) {
+
+        my %QueueData = %{$QueueList{ $CurrLine->[$Config{'Queue.ColIndex.FullQueueName'}]}};
+
+        $Queue{ID} = $QueueData{ID};
+
+        my $Result = KIX18API::UpdateQueue(
+            { %Config, Client => $KIXClient, Queue => \%Queue }
+        );
+
+        if (!$Result) {
+          push(@{$CurrLine}, 'ERROR');
+          push(@{$CurrLine}, 'Update failed.');
+        }
+        elsif ($Result == 1) {
+          push(@{$CurrLine}, 'no update required');
+          push(@{$CurrLine}, $Queue{ID});
+        }
+        else {
+          push(@{$CurrLine}, 'update');
+          push(@{$CurrLine}, $Queue{ID});
+        }
+
+        print STDOUT "$LineCount: Updated Queue <" . $Queue{ID} . " / "
+            . $Queue{Name}
+            . ">.\n"
+            if ($Config{Verbose} > 2);
+
+      }
+      # create new Queue...
+      else {
+        my $NewQueueID = KIX18API::CreateQueue(
+            { %Config, Client => $KIXClient, Queue => \%Queue }
+        );
+
+        if ($NewQueueID) {
+          push(@{$CurrLine}, 'created');
+          push(@{$CurrLine}, $NewQueueID);
+        }
+        else {
+          push(@{$CurrLine}, 'ERROR');
+          push(@{$CurrLine}, 'Create failed.');
+        }
+
+        print STDOUT "$LineCount: Created Queue <$NewQueueID / "
+            . $Queue{Name} . ">.\n"
+            if ($Config{Verbose} > 2);
+      }
+
+      $LineCount++;
+
+    }
+  }
+}
 else {
   print STDERR "\nUnknown object type '$Config{ObjectType}' - aborting.\n\n";
   pod2usage( -verbose => 1);

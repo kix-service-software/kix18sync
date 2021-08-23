@@ -1,0 +1,4 @@
+"Full Queue Name";"Calendar Name";Validity;Comment;FollowUpId;"System Address Email";"UnlockTimeOut"
+"Sales4";;valid;;1;"Sales@example.com";1440
+"Sales4::Team 1";;valid;;1;"Sales-team1@example.com";720
+"Sales4::Team 2";;valid;;1;"sales-team2@example.com";360
