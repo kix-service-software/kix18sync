@@ -2,9 +2,12 @@
 
 To provide simple tools to import data into KIX18 by using its REST-API, data sources may be remote DB tables or CSV files.
 
-These scripts are intented to work as external tools accessing KIX only by its REST-API. They can be run on the docker host running KIX, however this scenario is not a generic use case. Keep in mind to give proper configuration of the KIX-REST **Backend** API, that is correct port number if running on the docker host.
+These scripts are intented to work as **external tools** accessing KIX only by its REST-API. There might be this thing called "internet" between KIX backend and your system running this script.
 
-These scripts **do not** evaluate your docker setup in environment files in order to run.
+![image info](./doc/KIX18_SyncScripts.png)
+
+Of course these scripts can be used on your docker host, running KIX. However this scenario is not a generic use case. These scripts **do not** evaluate your docker setup environment files. Therefore, keep in mind to give proper configuration of the KIX-REST **Backend** API, that is correct port number if running on the docker host.
+
 
 
 ## Contents/Structure
@@ -73,6 +76,7 @@ KIXUserName        = "API-User"
 KIXPassword        = "API-User-Password"
 KIXURL             = http://localhost:20000
 Proxy              = ""
+NoSSLVerify        = "1"
 APITimeOut         = 30
 
 # CSV configuration ...
