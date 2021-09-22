@@ -1438,14 +1438,26 @@ sub _ReadSources {
   if( $Params{CSVQuote} =~ /^none.*/i) {
     $Params{CSVQuote} = undef;
   }
+
+  my $EOL = undef;
+  if( $Params{CSVEOL} && $Params{CSVEOL} ne 'no' ) {
+    $EOL = $Params{CSVEOL};
+  }
+  # get OS from Hostsystem
+  my $OS = $^O;
+
+  # if host system macOS set EOL undef
+  if ($OS eq 'darwin') {
+    $EOL = undef;
+  }
+
   my $InCSV = Text::CSV->new (
     {
       binary => 1,
       auto_diag => 1,
       sep_char   => $Params{CSVSeparator},
       quote_char => $Params{CSVQuote},
-      # new-line-handling may be modified TO DO
-      #eol => "\r\n",
+      eol => $EOL,
     }
   );
 
@@ -1520,13 +1532,24 @@ sub _WriteResult {
   if( $Params{CSVQuote} =~ /^none.*/i) {
     $Params{CSVQuote} = undef;
   }
+
+  my $EOL = "\r\n";
+
+  # get OS from Hostsystem
+  my $OS = $^O;
+
+  # if Hostsystem MacOS set EOL undef
+  if ($OS eq 'darwin') {
+      $EOL = undef;
+  }
+
   my $OutCSV = Text::CSV->new (
     {
       binary => 1,
       auto_diag => 1,
       sep_char   => $Params{CSVSeparator},
       quote_char => $Params{CSVQuote},
-      eol => "\r\n",
+      eol => $EOL,
     }
   );
 
