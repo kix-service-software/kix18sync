@@ -585,8 +585,10 @@ elsif ( $Config{ObjectType} eq 'Contact') {
           }
 
           # assign default roles based on IsAgent/IsCustomer status...
-          push( @RoleArr, 'Agent User') if( $IsAgent );
-          push( @RoleArr, 'Customer') if( $IsCustomer );
+          if( $Config{'Contact.AutoAddContextRoles'} ) {
+            push( @RoleArr, 'Agent User') if( $IsAgent );
+            push( @RoleArr, 'Customer') if( $IsCustomer );
+          }
 
           # get role ids for user...
           my @RoleIDsArr = qw{};
