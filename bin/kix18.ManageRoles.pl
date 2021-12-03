@@ -244,6 +244,7 @@ if ($Config{Direction} eq 'import') {
             $a->[5] cmp $b->[5] ||
             $a->[4] cmp $b->[4]
     } @{$RoleData};
+    print STDOUT "\nSorting lines by role name, target, type..." if ($Config{Verbose} > 1);
 
     # for each role...
     my $LineCount = 0;
@@ -412,7 +413,7 @@ if ($Config{Direction} eq 'import') {
                 print STDERR "\nNo TeamID fround for <$TeamName> (line )!\n";
                 $TeamID = "UnknownTeam_$TeamName";
             }
-            $CurrRP{'Target'} =~ s/$Pattern/$TeamID/eg;
+            $CurrRP{'Target'} =~ s/\Q$Pattern\E/$TeamID/g;
         }
 
         # store current permission...
