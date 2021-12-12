@@ -594,15 +594,16 @@ elsif ( $Config{ObjectType} eq 'Contact') {
           my @RoleIDsArr = qw{};
           ROLENAME:
           for my $CurrRoleName ( @RoleArr ) {
+              print STDERR "\nRole$CurrRoleName... ";
               next ROLENAME if( !$RoleList{$CurrRoleName});
               next ROLENAME if( !$RoleList{$CurrRoleName}->{ID} );
 
-              # skip role if not fitting IsAgent/IsCustomer status...
-              next ROLENAME if( !$IsAgent && !$IsCustomer);
-              next ROLENAME if( $RoleList{$CurrRoleName}->{Agent} && !$IsAgent);
-              next ROLENAME if( $RoleList{$CurrRoleName}->{Customer} && !$IsCustomer);
+              if(  ($RoleList{$CurrRoleName}->{Customer} && $IsCustomer)
+                || ($RoleList{$CurrRoleName}->{Agent} && $IsAgent))
+              {
+                push( @RoleIDsArr, $RoleList{$CurrRoleName}->{ID} ) ;
+              }
 
-              push( @RoleIDsArr, $RoleList{$CurrRoleName}->{ID} ) ;
           }
 
           if( $Config{Verbose} > 4) {
