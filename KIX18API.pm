@@ -558,11 +558,14 @@ sub UpdateUser {
   if( $Params{Client}->responseCode() eq "200") {
     my $Response = from_json( $Params{Client}->responseContent() );
     $Result = $Response->{UserID};
+    $Params{User}->{UserID} = $Response->{UserID};
+    if( $Params{User}->{RoleIDs} ) {
+      UpdateUserRoles(\%Params);
+    }
   }
   else {
     print STDERR "Updating user failed (Response ".$Params{Client}->responseCode().")!";
     print STDERR "\ndata submitted: ".Dumper($RequestBody)."\n";
-
   }
 
   return $Result;
@@ -603,6 +606,97 @@ sub CreateUser {
 
 }
 
+
+
+
+sub UpdateUserRoles {
+
+  my %Params = %{$_[0]};
+  my $Result = 1;
+
+  $Params{User}->{ValidID} = $Params{User}->{ValidID} || 1;
+  return 0 if ($Params{User}->{ID} == 1);
+
+  print STDOUT "Updating roles for user id <$Params{User}->{ID}>"
+    .".\n" if( $Params{Verbose} > 4);
+
+  # find which roles to remove/keep/add..
+  my %RoleMap = map { $_ => "add" } @{$Params{User}->{RoleIDs}};
+  my @RemoveRoles = qw{};
+
+  # do NOT touch possibly existing assigments for UsageContext roles..
+  my %RoleList = RoleList(\%Params);
+  my @IgnoreRoles = ( "Agent User", "Customer" );
+  for my $IgnoreRole ( @IgnoreRoles ) {
+    if( $RoleList{$IgnoreRole} && $RoleList{$IgnoreRole}->{ID} ) {
+      $RoleMap{ $RoleList{$IgnoreRole}->{ID} } = "set";
+    }
+  }
+
+  $Params{Client}->GET(
+      "/api/v1/system/users/".$Params{User}->{ID}."/roleids"
+  );
+  if( $Params{Client}->responseCode() ne "200") {
+    print STDERR "\nSearch for user roles failed (Response ".$Params{Client}->responseCode().")!\n";
+    $Result = 0;
+  }
+  else {
+    my $Response = from_json( $Params{Client}->responseContent() );
+    for my $CurrItem ( @{$Response->{RoleIDs}}) {
+      if( $RoleMap{$CurrItem} ) {
+        $RoleMap{$CurrItem} = "set";
+      }
+      else {
+        push( @RemoveRoles, $CurrItem)
+      }
+    }
+  }
+
+
+  # remove roles...
+  print STDOUT "Removin roles <".join(",", @RemoveRoles)."> from user id <$Params{User}->{ID}>"
+    .".\n" if( $Params{Verbose} > 5);
+  for my $CurrRoleID ( @RemoveRoles ) {
+    $Params{Client}->DELETE(
+        "/api/v1/system/users/".$Params{User}->{ID}."/roleids/"
+        .$CurrRoleID
+    );
+    if( $Params{Client}->responseCode() ne "204") {
+      print STDERR "\nRemoving role <".$CurrRoleID
+        ."> from user <".$Params{User}->{UserID}
+        ."> failed (Response ".$Params{Client}->responseCode().")!";
+      $Result = 0;
+    }
+  }
+
+
+
+  # adding current roles...
+  print STDOUT "Keeping/adding roles <".join(",", keys(%RoleMap))."> to user id <$Params{User}->{ID}>"
+    .".\n" if( $Params{Verbose} > 5);
+  for my $CurrRoleID( keys(%RoleMap) ) {
+    next if( $RoleMap{$CurrRoleID} eq "set");
+
+    my $RequestBody = {
+      "RoleID" => $CurrRoleID,
+    };
+    $Params{Client}->POST(
+        "/api/v1/system/users/".$Params{User}->{ID}."/roleids",
+        encode("utf-8", to_json( $RequestBody ))
+    );
+
+    if( $Params{Client}->responseCode() ne "201") {
+      print STDERR "\nAdding role <".$CurrRoleID
+        ."> to user <".$Params{User}->{ID}
+        ."> failed (Response ".$Params{Client}->responseCode().")!";
+      print STDERR "\ndata submitted: ".Dumper($RequestBody)."\n";
+      $Result = 0;
+    }
+  }
+
+  return $Result;
+
+}
 
 
 #-------------------------------------------------------------------------------
@@ -861,7 +955,7 @@ sub ValidList {
 
 
 sub CalendarList {
-    
+
   my %Params = %{$_[0]};
   my %Result = ();
   my $Client = $Params{Client};
@@ -1016,11 +1110,9 @@ sub UpdateQueue {
     else {
         print STDERR "Updating Queue failed (Response ".$Params{Client}->responseCode().")!";
         print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
-
     }
 
     return $Result;
-
 }
 
 
