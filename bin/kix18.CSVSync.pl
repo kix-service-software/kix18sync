@@ -55,7 +55,7 @@ Use kix18.CSVSync.pl  --ot ObjectType* --help [other options]
 =over
 
 =item
---ot: ObjectType  (Contact|Organisation|SLA)
+--ot: ObjectType  (Contact|Organisation|SLA|User)
 =cut
 
 =item
@@ -530,7 +530,7 @@ elsif ( $Config{ObjectType} eq 'SLA') {
 
 
 }
-elsif ( $Config{ObjectType} eq 'Contact') {
+elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
 
   my %OrgIDCache = ();
 
@@ -701,12 +701,14 @@ elsif ( $Config{ObjectType} eq 'Contact') {
             if( $Config{Verbose} > 2);
           }
 
-
-
       }
       else {
           # no contact created/updated...
           push( @{$CurrLine}, '');
+      }
+
+      if( $Config{ObjectType} eq 'User' ) {
+        next;
       }
 
       # ------------------------------------------------------------------------
