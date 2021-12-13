@@ -118,7 +118,7 @@ shell> sudo apt install perl-Text-CSV
 
 
 ### Usage
-`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|Organisation|SLA|Asset|Queue`
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|User|Organisation|SLA|Asset|Queue`
 
 The script can be used by referring to a configuration and object type only. Any parameter given by command line overwrites values specified in the config file. Use `kix18.CSVSync.pl --help` for a detailed parameter listing.
 
@@ -137,7 +137,7 @@ The script can be used by referring to a configuration and object type only. Any
 - `fpw`: if set, an updated user will get the password specified by the import data
 
 
-Depending on the object type, any CSV files matching name pattern from the input directory are read. Files containing `Result` are omitted. For each import file a `SourceFileName.Result.csv` is written. Name patterns are ignored if a specific file name is given.
+Depending on the object type, any CSV files matching name pattern from the input directory are read. File which names contain  `Result` are omitted. For each import file a `SourceFileName.Result.csv` is written. Name patterns are ignored if a specific file name is given.
 
 - object type `Asset`: name pattern `*Asset*.csv`
 - object type `Contact`: name pattern `*Contact*.csv`
@@ -246,9 +246,22 @@ If no asset number is given, the script will create a new asset in the asset cla
 `./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData04_Computer_Sample.csv --ac Computer`
 
 
+### Contact vs. Users?
+
+KIX18 differs between user accounts and contacts. Contacts are just contact information of a person or functional mailbox. A contact **might** be associated with a user account which allows the person/contact to log into KIX. The UsageContext defines whether it's possible to login as customer, (i.e. Self Service Portal user), or agent user. If a provided contact data set contains a UserLogin, user account information (password, roles and usage context flags IsAgent/IsCustomer) at all.
+
+If you want to update contact information only, do not provide content in column for `UserLogin`.
+
+If you want to create or update contact information and update or create corresponding user accounts, do provide content in column for `UserLogin`.
+
+If you want to update existing user accounts with new role assignments, then ObjectType User should be used (`--ot User`). Any non related contact information will not be touched. This option **does not** create new user accounts.
+
+
 ### Queue vs. Teams?
 
-KIX18 uses a more understandable wording for "queues" which are some sort of assignee groups to which tickets are assigned. A group of people working together to solve incidents, answer requests or plan changes. One could call these people "a team". However, due to historic reasons the original naming "queues" is still used in the API. Therefore and for us being a bit anachronistic, we stick to "queues" in this import script as well... ;-).
+KIX18 uses a more understandable wording for "queues" which are some sort of assignee groups to which tickets are assigned. A group of people working together to solve incidents, answer requests or plan changes. One could call these people "a team". However, due to historic reasons the original naming "queues" is still used in the API. Therefore we stick to "queues" in this script so far.
+
+
 
 
 ----
