@@ -29,6 +29,47 @@ shell> sudo apt install libconfig-simple-perl librest-client-perl libjson-perl l
 ```
 
 
+----
+## Configuration Import Export - kix18.ConfigImportExport.pl
+
+Script `bin/kix18.ConfigImportExport.pl` exports and imports various complex configuration objects from/to KIX backends, currently including
+- DynamicField
+- Job
+- ObjectAction
+- ReportDefinition
+- Template
+
+**NOTE** requires at minimum backend 1535 (v21-rc).
+
+### Usage
+
+Provide parameter `--if` (input file) in order to import a configuration. It maybe helpful to use verbose if your configuration cannot be uploaded. Furthermore it is recommended to clear the backend cache of KIX after importing configurations.
+
+Provide parameter `--of` or `--od` (output file/directory) in order to export configuration. It maybe helpful to use verbose if filters to not show effect.
+
+```
+./bin/kix18.ConfigImportExport.pl --help
+./bin/kix18.ConfigImportExport.pl --config ./config/kix18.ConfigImportExport.cfg --od /tmp --ft DynamicField --fn *Close*
+./bin/kix18.ConfigImportExport.pl --config ./config/kix18.ConfigImportExport.cfg --if ./sample/ImportConfig_Sample.json --verbose 2
+```
+
+The script can be used by referring to a configuration instead of requiring each parameter from command line. Please call `./bin/kix18.ConfigImportExport.pl --help` for a detailed parameter listing.
+
+- `config`: path to configuration file instead of command line params
+- `url`: URL to KIX backend API (e.g. https://t12345-api.kix.cloud)
+- `u`: KIX user login
+- `p`: KIX user password
+- `verbose`: makes the script verbose
+- `nossl`: disables SSL verification on backend connect
+- `help`: show help message
+- `od`: to which directory the output should be written (setting triggers export, using filters)
+- `of`: to which file the output should be written (setting triggersexport, using filters)
+- `ft`: export filter: comma separates list of object types (e.g. DynamicField,Job,ObjectAction,ReportDefinition,Template)
+- `fn`: export filter: pattern for object name applied in a LIKE search (e.g. *Close*), requires option "ft" to be set
+- `if`: source file which is uploaded in config import (setting triggers import)
+- `im`: import setting: mode (one value of Default|ForceAdd|OnlyAdd|OnlyUpdate)
+
+
 
 ----
 ## Manage Roles and Permissions - kix18.ManageRoles.pl

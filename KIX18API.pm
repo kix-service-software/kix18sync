@@ -64,6 +64,159 @@ sub Connect {
 
 
 #-------------------------------------------------------------------------------
+# Config Import Export KIX-API
+sub GetConfigData {
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+  my $Type = $Params{FilterType} || "";
+  my $Name = $Params{FilterName} || "";
+
+
+  print STDOUT "Search config by type IN '$Type'.\n" if( $Params{Verbose} > 3);
+
+  my @QueryParams = qw{};
+
+  my %OFM = (
+    'dynamicfield'    => 'DynamicField',
+    'job'             => 'Job',
+    'objectaction'    => 'ObjectAction',
+    'reportdefinition'=> 'ReportDefinition',
+    'template'        => 'Template',
+  );
+
+  # prepare object filter...
+  my @FilterObjects = ();
+  for my $FilterObject (  split( ",", $Type) ) {
+
+    if( $FilterObject && $OFM{lc($FilterObject)} ) {
+      push( @FilterObjects, $OFM{lc($FilterObject)} )
+    }
+    else {
+      print STDERR "\nUnkown or invalid filter object ($FilterObject) will be ignored!\n";
+    }
+  }
+  if( scalar(@FilterObjects) > 0 ) {
+    push( @QueryParams, "object=".to_json( \@FilterObjects) );
+  }
+
+  # prepare name search
+  # NOTE: we've got to use "filter" because not all objects support "search"
+  my $SearchQuery = {};
+  if( $Name ) {
+    for my $CurrFilterObject ( @FilterObjects ) {
+      my @Conditions = qw{};
+      push( @Conditions,
+        {
+          "Field"    => "Name",
+          "Operator" => "LIKE",
+          "Type"     => "STRING",
+          "Value"    => $Name
+        }
+      );
+      $SearchQuery->{$CurrFilterObject}->{AND} =\@Conditions;
+    }
+
+    if( keys( %{$SearchQuery} ) ) {
+      push( @QueryParams, "filter=".to_json( $SearchQuery) );
+    }
+  }
+
+  my $QueryParamStr = join( ";", @QueryParams);
+  print STDOUT "\nKIX18API::GetConfigData Query"
+    .Dumper(\@QueryParams)
+    ."\n" if( $Params{Verbose} > 6);
+
+  $Client->GET( "/api/v1/system/serialization?$QueryParamStr");
+
+  print STDOUT "\nKIX18API::GetConfigData API-URL=/api/v1/system/serialization?"
+    ."$QueryParamStr.\n" if( $Params{Verbose} > 5);
+
+  if( $Client->responseCode() ne "200") {
+    print STDERR "\nSearch for config objects failed (Response ".$Client->responseCode().")!\n";
+    exit(-1);
+  }
+  else {
+    my $Response = from_json( $Client->responseContent() );
+    print STDOUT "\nKIX18API::GetConfigData Response ".Dumper( $Response )."\n" if( $Params{Verbose} > 7);
+
+    if( $Response->{SerializationData} ) {
+      $Result{"Content"}     = $Response->{SerializationData}->{"Content"};
+      $Result{"ContentType"} = $Response->{SerializationData}->{"ContentType"};
+      $Result{"Filename"}    = $Response->{SerializationData}->{"Filename"};
+    }
+  }
+
+  return \%Result;
+}
+
+
+sub UploadConfigData {
+
+  my %Params = %{$_[0]};
+  my $Result = 0;
+
+  return 0 if( !$Params{Content} );
+
+  my $Headers = {Accept => 'application/json', };
+  my $RequestBody = {
+    "content" => $Params{Content}
+  };
+
+  my %ImportModes = (
+    "default"    => "Default",
+    "forceadd"   => "ForceAdd",
+    "onlyadd"    => "OnlyAdd",
+    "onlyupdate" => "OnlyUpdate",
+  );
+
+  my @QueryParams = qw{};
+  if( $Params{ImportMode} && $ImportModes{lc($Params{ImportMode})} ) {
+    push( @QueryParams, "mode=".uri_escape( to_json( $ImportModes{lc($Params{ImportMode})} ) ) )
+  }
+  my $QueryParamStr = join( ";", @QueryParams);
+
+  $Params{Client}->POST(
+      "/api/v1/system/serialization?$QueryParamStr",
+      to_json( $RequestBody ),
+      $Headers
+  );
+
+  print STDOUT "\nKIX18API::UploadConfigData API-URL=/api/v1/system/serialization?"
+    ."$QueryParamStr.\n" if( $Params{Verbose} > 6);
+
+  if( $Params{Client}->responseCode() ne "200") {
+    print STDERR "\nUploading configuration failed (Response ".$Params{Client}->responseCode().")!";
+    print STDERR "\nPOST /api/v1/system/serialization?".$QueryParamStr."\n";
+    print STDERR "\nData submitted: ".Dumper($RequestBody)."\n";
+
+    $Result = 0;
+  }
+  else {
+    my $Response = from_json( $Params{Client}->responseContent() );
+    print STDOUT "\nResponse ".Dumper( $Response )."\n" if( $Params{Verbose} > 6);
+
+    if( $Response->{'Result'} ) {
+      my @ResultArr = qw{};
+      for my $CurrObjType ( sort(keys(%{$Response->{'Result'}}))) {
+        my %ObjResult = %{$Response->{'Result'}->{$CurrObjType}};
+        my @LineResult = qw{};
+        for my $StateCount ( keys(%ObjResult) ) {
+          push( @LineResult, "$StateCount: $ObjResult{$StateCount}");
+        }
+        push( @ResultArr, "$CurrObjType: ". join(", ", @LineResult));
+      }
+      $Result = join("\n\t", @ResultArr);
+    }
+
+  }
+
+  return $Result;
+
+}
+
+
+#-------------------------------------------------------------------------------
 # SLA HANDLING FUNCTIONS KIX-API
 sub SLAValueLookup {
   my %Params = %{$_[0]};
@@ -80,6 +233,7 @@ sub SLAValueLookup {
 
   return $Result;
 }
+
 
 sub ListSLA {
   my %Params = %{$_[0]};
@@ -113,7 +267,6 @@ sub ListSLA {
 
   return %Result;
 }
-
 
 
 sub UpdateSLA {
@@ -150,7 +303,6 @@ sub UpdateSLA {
 }
 
 
-
 sub CreateSLA {
 
   my %Params = %{$_[0]};
@@ -182,7 +334,6 @@ sub CreateSLA {
   return $Result;
 
 }
-
 
 
 #-------------------------------------------------------------------------------
@@ -240,7 +391,6 @@ sub SearchContact {
 }
 
 
-
 sub UpdateContact {
 
   my %Params = %{$_[0]};
@@ -274,7 +424,6 @@ sub UpdateContact {
   return $Result;
 
 }
-
 
 
 sub CreateContact {
@@ -372,7 +521,6 @@ sub SearchOrg {
 }
 
 
-
 sub UpdateOrg {
 
   my %Params = %{$_[0]};
@@ -403,7 +551,6 @@ sub UpdateOrg {
   return $Result;
 
 }
-
 
 
 sub CreateOrg {
