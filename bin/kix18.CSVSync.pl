@@ -565,6 +565,7 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
 
           # extract role names
           my $RolesStrg = $CurrLine->[$Config{'Contact.ColIndex.Roles'}];
+          utf8::encode($RolesStrg);
           my @RoleArr = split( ',', $RolesStrg );
 
           # get IsAgent/-Customer values...
