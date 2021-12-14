@@ -1,0 +1,30 @@
+{
+  "DynamicField": [
+    {
+      "Label": "Book Type",
+      "Name": "BookType",
+      "ObjectType": "Ticket",
+      "Comment": "This is just a sample for config import.",
+      "FieldTypeDisplayName": "Selection",
+      "FieldType": "Multiselect",
+      "CustomerVisible": 1,
+      "InternalField": 0,
+      "Valid": "valid",
+      "Config": {
+        "CountDefault": 1,
+        "CountMax": 4,
+        "CountMin": 1,
+        "DefaultValue": 0,
+        "ItemSeparator": "",
+        "PossibleValues": {
+          "epub": "ePub",
+          "paperback": "paper back",
+          "hardcover": "hard cover",
+          "pdfdrm": "PDF (DRM protected)",
+          "pdffree": "PDF (no DRM)"
+        },
+        "TranslatableValues": 1
+      }
+    }
+  ]
+}
