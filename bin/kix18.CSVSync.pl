@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # --
-# bin/kix18.dataimport.pl - imports CSV data into KIX18
-# Copyright (C) 2006-2021 c.a.p.e. IT GmbH, http://www.cape-it.de/
+# bin/kix18.CSVSync.pl - imports CSV data into KIX18
+# Copyright (C) 2006-2022 c.a.p.e. IT GmbH, http://www.cape-it.de/
 #
 # written/edited by:
 # * Torsten(dot)Thau(at)cape(dash)it(dot)de
@@ -62,6 +62,13 @@ Use kix18.CSVSync.pl  --ot ObjectType* --help [other options]
 --ac: AssetClass  (e.g. Computer|Location|Software)
 =cut
 
+=item
+--uam: use asset mapping defined in config file, rather than CSV headline
+=cut
+
+=item
+--anl: attempt name lookup if no asset number if given and use first found asset as update destination
+=cut
 
 =item
 --config: path to configuration file instead of command line params
@@ -83,11 +90,9 @@ Use kix18.CSVSync.pl  --ot ObjectType* --help [other options]
 --i: input directory
 =cut
 
-
 =item
 --if: input file (overrides param input directory)
 =cut
-
 
 =item
 --o: output directory
@@ -151,6 +156,8 @@ GetOptions (
   "p=s"        => \$Config{KIXPassword},
   "ot=s"       => \$Config{ObjectType},
   "ac=s"       => \$Config{AssetClass},
+  "anl"        => \$Config{AssetNameLookup},
+  "uam"        => \$Config{UseAssetMapping},
   "i=s"        => \$Config{CSVInputDir},
   "if=s"       => \$Config{CSVInputFile},
   "o=s"        => \$Config{CSVOutputDir},
@@ -166,7 +173,7 @@ if( $Help ) {
   exit(-1)
 }
 
-# APOLOGY-NOTE
+# APOLOGY
 # OK, this is getting a bit messy. I do know this is really ugly code.
 # I regret not having started a bit more modularized - it sort of evolved from
 # a quick need. Someday there will be a re-evolution, but not today :-/.
@@ -276,29 +283,52 @@ if ( $Config{ObjectType} eq 'Asset') {
   $NewestDef = $SortedDefs[0]->{'Definition'};
 
 
+  my %KeyIndex = ();
+  # get array index from mapping configuration...
+  if( $Config{UseAssetMapping} ) {
+    my $RowCount = 0;
+    for my $CurrKey( keys(%Config) ) {
+      next if( $CurrKey !~ /Asset\.ColIndex\.(.+)$/);
+      $KeyIndex{ $1 } = $Config{$CurrKey};
+      $RowCount++;
+    }
+    print STDOUT "\nusing predefined asset mapping for "
+      . $RowCount
+      ." rows."
+      if( $Config{Verbose} > 4);
+  }
+
   # process import lines
   FILE:
   for my $CurrFile ( keys( %{$CSVDataRef}) ) {
-    my %KeyIndex = ();
     my $LineCount = 0;
+
+    if ( !$Config{UseAssetMapping}) {
+      %KeyIndex = ();
+    }
 
     LINE:
     for my $CurrLine ( @{$CSVDataRef->{$CurrFile}} ) {
 
       # get array index for each given attribute key...
       my %Asset = ();
-      if ( $LineCount < 1) {
+      if ( !$Config{UseAssetMapping} && $LineCount < 1) {
         my $RowIndex = 0;
         for my $CurrKey( @{$CurrLine} ) {
           $KeyIndex{ $CurrKey } = $RowIndex;
           $RowIndex++;
         }
+        print STDOUT "\nusing CSV defined asset mapping for "
+          . $RowIndex
+          ." rows."
+          if( $Config{Verbose} > 4);
 
         $LineCount++;
         next LINE;
       }
 
-      # build new asset and version data hash from CSV data...
+
+      # build new asset and version hash from CSV data...
       $Asset{'ClassID'} = $Config{AssetClassID} || '';
 
       my $DataIndex = $KeyIndex{'Number'};
@@ -310,11 +340,23 @@ if ( $Config{ObjectType} eq 'Asset') {
       $Asset{'Version'}->{'Name'} = $CurrLine->[$DataIndex];
 
       $DataIndex = $KeyIndex{'Deployment State'};
-      my $ImportValue = $CurrLine->[$DataIndex];
+      my $ImportValue = "";
+      if( $DataIndex =~/^SET\:(.+)/) {
+        $ImportValue = $1 || "Production";
+      }
+      else {
+        $ImportValue = $CurrLine->[$DataIndex]
+      }
       $Asset{'Version'}->{'DeplStateID'} = $DeplStateList{$ImportValue};
 
       $DataIndex = $KeyIndex{'Incident State'};
-      $ImportValue = $CurrLine->[$DataIndex];
+      $ImportValue = "";
+      if( $DataIndex =~/^SET\:(.+)/) {
+        $ImportValue = $1 || "Operational";
+      }
+      else {
+        $ImportValue = $CurrLine->[$DataIndex]
+      }
       $Asset{'Version'}->{'InciStateID'} = $InciStateList{$ImportValue};
 
       $Asset{'Version'}->{'Data'} = _BuildAssetVersionData(
@@ -326,6 +368,7 @@ if ( $Config{ObjectType} eq 'Asset') {
 
 
       # search asset for possible update...
+      my $UpdateAssetID = 0;
       if( $Asset{'Number'} ) {
           my %SearchResult = KIX18API::SearchAsset({
             %Config,
@@ -338,47 +381,53 @@ if ( $Config{ObjectType} eq 'Asset') {
             push( @{$CurrLine}, 'ERROR');
             push( @{$CurrLine}, $SearchResult{Msg});
           }
-
-          # update existing asset...
           elsif ( $SearchResult{ID} ) {
-            $Asset{ID} = $SearchResult{ID};
-            my $AssetID = KIX18API::UpdateAsset(
-              { %Config, Client => $KIXClient, Asset => \%Asset }
-            );
-
-            if( !$AssetID) {
-              push( @{$CurrLine}, 'ERROR');
-              push( @{$CurrLine}, 'Update failed.');
-            }
-            elsif ( $AssetID == 1 ) {
-              push( @{$CurrLine}, 'no update required');
-              push( @{$CurrLine}, $SearchResult{Msg});
-            }
-            else {
-              push( @{$CurrLine}, 'update');
-              push( @{$CurrLine}, $SearchResult{Msg});
-            }
-
-            print STDOUT "$LineCount: Updated asset <$AssetID> for <"
-              . $Asset{Number}
-              . ">.\n"
-              if( $Config{Verbose} > 2);
-          }
-          else {
-            push( @{$CurrLine}, 'ERROR');
-            push( @{$CurrLine}, 'Update failed (asset <'
-              .$Asset{'Number'}
-              .'> not found).');
-            print STDOUT "$LineCount: asset <"
-              . $Asset{Number}
-              . "> not found doing nothing.\n"
-              if( $Config{Verbose} > 2);
+              $UpdateAssetID = $SearchResult{ID};
           }
       }
+      elsif( $Config{AssetNameLookup} ) {
 
-      # create new asset...
-      else {
+        my %SearchResult = KIX18API::SearchAsset({
+          %Config,
+          Client      => $KIXClient,
+          Identifier  => "Name" || '',
+          SearchValue => $Asset{'Version'}->{'Name'} || ''
+        });
 
+        # handle errors...
+        if ( $SearchResult{Msg} ) {
+          push( @{$CurrLine}, 'ERROR');
+          push( @{$CurrLine}, $SearchResult{Msg});
+        }
+        elsif ( $SearchResult{ID} ) {
+            $UpdateAssetID = $SearchResult{ID};
+        }
+      }
+
+      # update existing asset...
+      if( $UpdateAssetID ) {
+
+        $Asset{ID} = $UpdateAssetID;
+        my $AssetID = KIX18API::UpdateAsset(
+          { %Config, Client => $KIXClient, Asset => \%Asset }
+        );
+
+        if ( $AssetID == 1 ) {
+          push( @{$CurrLine}, 'no update required');
+          push( @{$CurrLine}, '');
+        }
+        else {
+          push( @{$CurrLine}, 'update');
+          push( @{$CurrLine}, '');
+        }
+
+        print STDOUT "$LineCount: Updated asset <$AssetID> for <"
+          . $Asset{Number}
+          . ">.\n"
+          if( $Config{Verbose} > 2);
+     }
+     # create new asset...
+     else {
         my $NewAssetID = KIX18API::CreateAsset(
           { %Config, Client => $KIXClient, Asset => \%Asset }
         ) || '';
@@ -595,7 +644,6 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
           my @RoleIDsArr = qw{};
           ROLENAME:
           for my $CurrRoleName ( @RoleArr ) {
-              print STDERR "\nRole$CurrRoleName... ";
               next ROLENAME if( !$RoleList{$CurrRoleName});
               next ROLENAME if( !$RoleList{$CurrRoleName}->{ID} );
 
