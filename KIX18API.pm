@@ -801,7 +801,7 @@ sub UpdateUserRoles {
 
 
   # remove roles...
-  print STDOUT "Removin roles <".join(",", @RemoveRoles)."> from user id <$Params{User}->{ID}>"
+  print STDOUT "Removing roles <".join(",", @RemoveRoles)."> from user id <$Params{User}->{ID}>"
     .".\n" if( $Params{Verbose} > 5);
   for my $CurrRoleID ( @RemoveRoles ) {
     $Params{Client}->DELETE(
