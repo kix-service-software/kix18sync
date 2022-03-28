@@ -172,6 +172,27 @@ Import SLAs given by CSV data:
 Import location assets given by CSV data:
 `./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData00_Location_Sample.csv --ac Location`
 
+Import building assets given by CSV data:
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData01_Building_Sample.csv --ac Building`
+
+Import room assets given by CSV data:
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData02_Room_Sample.csv --ac Room`
+
+Import network assets given by CSV data:
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData03_Network_Sample.csv --ac Network -verbose 5`
+
+Import software assets given by CSV data:
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData04_Software_Sample.csv --ac Software -verbose 4`
+
+Import computer assets given by CSV data:
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData05_Computer_Sample.csv --ac Computer -verbose 4`
+
+Import hardware assets given by CSV data:
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData06_Hardware_Sample.csv --ac Hardware -verbose 4`
+
+Import services given by CSV data:
+`./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Asset --if ./sample/AssetData10_Service_Sample.csv --ac Service -verbose 4`
+
 
 Generic use (without specific options, which may be required):
 `./bin/kix18.CSVSync.pl --config ./config/kix18.CSVSync.cfg --ot Contact|User|Organisation|SLA|Asset|Queue`
