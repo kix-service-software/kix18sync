@@ -76,7 +76,9 @@ The script can be used by referring to a configuration instead of requiring each
 
 Script `bin/kix18.ManageRoles.pl` retrieves role and permission infomation from a KIX18 by communicating with its REST-API.
 
-The provided `RoleData_Sample.csv` contains default roles and permissions as delivered by KIX. We try to keep this up to date. However, this script collection is mostly a fun side project, so please bear with us if it should lag behind and give us a hind.
+The provided `RoleData_Sample.csv` contains default roles and permissions as delivered by KIX. We try to keep this up to date. However, this script collection is mostly a fun side project, so please bear with us if it should lag behind and give us a hint.
+
+The script sort the provided role-permission by role name, target, type. Any output while processing the file refers to the sorted list. In order to make proper use of line information given by this script you should sort your CSV in advance.
 
 
 ### Usage
