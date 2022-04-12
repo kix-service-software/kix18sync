@@ -10,6 +10,7 @@
 "Agent User";Agent;;valid;Object;"/system/config/*{SysConfigOption.AccessLevel EQ confidential}";;-;-;-;-;-
 "Agent User";Agent;;valid;Object;"/system/config/definitions/*{SysConfigOptionDefinition.AccessLevel EQ confidential}";;-;-;-;-;-
 "Agent User";Agent;;valid;Resource;/session;;C;R;U;D;-
+"Agent User";Agent;;valid;Resource;/news;;-;R;-;-;-
 "Agent User";Agent;;valid;Resource;/system;;-;R;-;-;-
 "Agent User";Agent;;valid;Resource;/system/*;;-;-;-;-;-
 "Agent User";Agent;;valid;Resource;/system/users;;-;R;-;-;-
@@ -47,16 +48,15 @@
 "Asset Maintainer";Agent;;valid;Resource;/cmdb/*;;-;-;-;-;-
 "Asset Maintainer";Agent;;valid;Resource;/cmdb/configitems;;C;R;U;D;-
 "Asset Maintainer";Agent;;valid;Resource;/links;;C;R;U;D;-
-"Asset Reader";Agent;;valid;Resource;/system/cmdb;;-;R;-;-;-
-"Asset Reader";Agent;;valid;Resource;/system/cmdb/*;;-;-;-;-;-
 "Asset Reader";Agent;;valid;Resource;/system/cmdb/classes;;-;R;-;-;-
 "Asset Reader";Agent;;valid;Resource;/cmdb;;-;R;-;-;-
 "Asset Reader";Agent;;valid;Resource;/cmdb/*;;-;-;-;-;-
 "Asset Reader";Agent;;valid;Resource;/cmdb/configitems;;-;R;-;-;-
 "Asset Reader";Agent;;valid;Resource;/links;;-;R;-;-;-
+"Asset Reader";Agent;;valid;Resource;/system/cmdb;;-;R;-;-;-
+"Asset Reader";Agent;;valid;Resource;/system/cmdb/*;;-;-;-;-;-
 Customer;Customer;;valid;Resource;/auth;;C;-;-;-;-
 Customer;Customer;;valid;Resource;/cmdb;;-;R;-;-;-
-Customer;Customer;;valid;Resource;/contacts;;C;R;-;-;-
 Customer;Customer;;valid;Resource;/faq;;-;R;-;-;-
 Customer;Customer;;valid;Resource;/faq/*;;-;-;-;-;-
 Customer;Customer;;valid;Resource;/faq/articles;;-;R;-;-;-
@@ -64,6 +64,8 @@ Customer;Customer;;valid;Object;"/faq/articles/*{FAQArticle.CustomerVisible NE 1
 Customer;Customer;;valid;Resource;/faq/articles/*/votes;;C;R;-;-;-
 Customer;Customer;;valid;Resource;/i18n;;-;R;-;-;-
 Customer;Customer;;valid;Resource;/links;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/organisations;;-;R;-;-;-
+Customer;Customer;;valid;Object;"/organisations/*{Organisation.ID !IN $CurrentUser.Contact.OrganisationIDs}";;-;-;-;-;-
 Customer;Customer;;valid;Resource;/session;;C;R;U;D;-
 Customer;Customer;;valid;Resource;/system;;-;R;-;-;-
 Customer;Customer;;valid;Resource;/system/*;;-;-;-;-;-
@@ -90,7 +92,7 @@ Customer;Customer;;valid;Resource;/system/ticket;;-;R;-;-;-
 Customer;Customer;;valid;Resource;/system/users;;-;R;-;-;-
 Customer;Customer;;valid;Resource;/tickets;;C;R;-;-;-
 Customer;Customer;;valid;Resource;/tickets/*;;-;R;U;-;-
-Customer;Customer;;valid;Object;"/tickets/*{Ticket.OrganisationID NE $CurrentUser.Contact.PrimaryOrganisationID}";;-;-;-;-;-
+Customer;Customer;;valid;Object;"/tickets/*{Ticket.OrganisationID !IN $CurrentUser.Contact.OrganisationIDs}";;-;-;-;-;-
 Customer;Customer;;valid;Property;/tickets/*{Ticket.[Age,Articles,Changed,ContactID,Created,CreateTimeUnix,DynamicFields,OrganisationID,PriorityID,QueueID,StateID,TypeID,TicketNumber,Title]};;-;R;-;-;-
 Customer;Customer;;valid;Resource;/tickets/*/articles;;C;R;-;-;-
 Customer;Customer;;valid;Resource;/tickets/*/articles/*;;-;R;-;-;-
@@ -114,6 +116,10 @@ Customer;Customer;;valid;Resource;/system/templates/3;;-;R;-;-;-
 Customer;Customer;;valid;Property;/tickets/*{Ticket.[ObjectActions]};;-;R;-;-;-
 Customer;Customer;;valid;Resource;/system/objectactions/10;;-;R;-;-;-
 Customer;Customer;;valid;Resource;/system/templates/11;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/services;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/servicecontracts;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/news;;-;R;-;-;-
+Customer;Customer;;valid;Resource;/system/objectactions/1;;-;R;-;-;-
 "Customer Manager";Agent;;valid;Resource;/organisations;;C;R;U;D;-
 "Customer Manager";Agent;;valid;Resource;/contacts;;C;R;U;D;-
 "Customer Reader";Agent;;valid;Resource;/organisations;;-;R;-;-;-
@@ -133,6 +139,7 @@ Customer;Customer;;valid;Resource;/system/templates/11;;-;R;-;-;-
 "FAQ Reader";Agent;;valid;Resource;/faq/articles;;-;R;-;-;-
 "FAQ Reader";Agent;;valid;Resource;/faq/articles/*/votes;;C;R;U;D;-
 "FAQ Reader";Agent;;valid;Resource;/links;;-;R;-;-;-
+"News Manager";Agent;;valid;Resource;/system/news;;C;R;U;D;-
 "Report Manager";Agent;;valid;Resource;/reporting;;C;R;U;D;-
 "Report Manager";Agent;;valid;Resource;/system/roles;;-;R;U;-;-
 "Report User";Agent;;valid;Resource;/reporting;;C;R;-;-;-
@@ -144,7 +151,7 @@ Customer;Customer;;valid;Resource;/system/templates/11;;-;R;-;-;-
 "Report User";Agent;;valid;Resource;/reporting/reportdefinitions/1;;-;R;-;-;-
 "Report User";Agent;;valid;Resource;/reporting/reportdefinitions/2;;-;R;-;-;-
 "Report User";Agent;;valid;Object;/reporting/reports{};;-;-;-;-;-
-"Report User";Agent;;valid;Object;/reporting/reports/*{};;-;-;-;-;-
+"Report User";Agent;;valid;Object;"/reporting/reports/*{Report.DefinitionID GT 0}";;-;-;-;-;-
 "Report User";Agent;;valid;Object;"/reporting/reports{Report.DefinitionID IN [1,2]}";;C;R;-;-;-
 "Report User";Agent;;valid;Object;"/reporting/reports/*{Report.DefinitionID IN [1,2]}";;-;R;-;-;-
 "Report User";Agent;;valid;Resource;/reporting/reportdefinitions/3;"Permission for Report User";-;R;-;-;-
@@ -153,6 +160,12 @@ Customer;Customer;;valid;Resource;/system/templates/11;;-;R;-;-;-
 "Report User";Agent;;valid;Resource;/reporting/reportdefinitions/6;"Permission for Report User";-;R;-;-;-
 "Report User";Agent;;valid;Object;"/reporting/reports{Report.DefinitionID IN [3,4,5,6]}";"Permission for role 'Report User'.";C;R;-;-;-
 "Report User";Agent;;valid;Object;"/reporting/reports/*{Report.DefinitionID IN [3,4,5,6]}";"Permission for role 'Report User'.";-;R;-;-;-
+"Report User";Agent;;valid;Object;"/reporting/reports{Report.DefinitionID EQ 2}";"Read & Create permission for report definition with id 2.";C;R;-;-;-
+"Report User";Agent;;valid;Object;"/reporting/reports/*{Report.DefinitionID EQ 2}";"Read & Create permission for report definition with id 2.";-;R;-;-;-
+"Report User";Agent;;valid;Object;"/reporting/reports/*{Report.DefinitionID EQ 1}";"Read & Create permission for report definition with id 1.";-;R;-;-;-
+"Report User";Agent;;valid;Object;"/reporting/reports{Report.DefinitionID EQ 1}";"Read & Create permission for report definition with id 1.";C;R;-;-;-
+"Service Contract Manager";Agent;;valid;Resource;/system/servicecontracts;;C;R;U;D;-
+"Service Contract Manager";Agent;;valid;Resource;/system/services;;-;R;-;-;-
 Superuser;Agent;;valid;Resource;/*;;C;R;U;D;-
 Superuser;Agent;;valid;Object;/*{};;C;R;U;D;-
 Superuser;Agent;;valid;Property;/*{};;C;R;U;D;-
@@ -187,9 +200,15 @@ Superuser;Agent;;valid;Property;/*{};;C;R;U;D;-
 "Ticket Agent";Agent;;valid;Resource;/system/templates/8;"Permission for Template of Action with id 7 (ArticleForward)";-;R;-;-;-
 "Ticket Agent";Agent;;valid;Resource;/system/objectactions/9;"Permission for Action with id 9";-;R;-;-;-
 "Ticket Agent";Agent;;valid;Resource;/system/templates/10;"Permission for Template of Action with id 9";-;R;-;-;-
-"Ticket Agent";Agent;;valid;Resource;/system/automation/macros/10;"Permission for PostMacro of Action with id 9";-;-;U;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/automation/macros/11;"Permission for PostMacro of Action with id 9";-;-;U;-;-
 "Ticket Agent";Agent;;valid;Resource;/system/templates/categories;;-;R;-;-;-
-"Ticket Agent";Agent;;valid;Resource;/system/templates/12;"Read permission for template with id 12.";-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/objectactions/11;"Permission for Action with id 11";-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/12;"Permission for Template of Action with id 11";-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/13;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/services;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/servicecontracts;;-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/14;"Read permission for template with id 14.";-;R;-;-;-
+"Ticket Agent";Agent;;valid;Resource;/system/templates/15;"Read permission for template with id 15.";-;R;-;-;-
 "Ticket Agent";Agent;;valid;Resource;/tickets;;C;R;U;D;-
 "Ticket Agent";Agent;;valid;Resource;/system/ticket/*;;-;-;-;-;-
 "Ticket Agent";Agent;;valid;Resource;/system/ticket;;-;R;-;-;-
@@ -207,12 +226,67 @@ Superuser;Agent;;valid;Property;/*{};;C;R;U;D;-
 "Ticket Agent";Agent;;valid;Resource;/contacts;;-;R;-;-;-
 "Ticket Agent";Agent;;valid;Resource;/links;;C;R;U;D;-
 "Ticket Agent";Agent;;valid;Resource;/system/textmodules;;-;R;-;-;-
+"Ticket Agent (Servicedesk)";Agent;;valid;Resource;/system/templates/15;"Read permission for template with id 15.";-;R;-;-;-
+"Ticket Agent (Servicedesk)";Agent;;valid;Resource;/system/ticket/queues/1;;-;R;-;-;-
+"Ticket Agent (Servicedesk)";Agent;;valid;Resource;/system/ticket/queues/2;;-;R;-;-;-
+"Ticket Agent (Servicedesk)";Agent;;valid;Object;"/tickets/*{Ticket.QueueID IN [1,2]}";;C;R;U;D;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/services;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/servicecontracts;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/*;;-;-;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/*;;-;-;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/automation;;-;R;U;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/automation/*;;-;-;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/automation/macros;;-;-;U;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/automation/macros/*;;-;-;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/slas;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/2;"Permission for Action with id 2";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/13;"Permission for Template of Action with id 2";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/3;"Permission for Action with id 3";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/4;"Permission for Template of Action with id 3";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/4;"Permission for Action with id 4";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/5;"Permission for Template of Action with id 4";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/6;"Permission for Action with id 6";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/7;"Permission for Template of Action with id 6";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/7;"Permission for Action with id 7";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/8;"Permission for Template of Action with id 7";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/5;"Permission for Action with id 5";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/6;"Permission for Template of Action with id 5";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/8;"Permission for Action with id 8";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/9;"Permission for Template of Action with id 8";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/9;"Permission for Action with id 9";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/10;"Permission for Template of Action with id 9";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/automation/macros/11;"Permission for PostMacro of Action with id 9";-;-;U;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/objectactions/11;"Permission for Action with id 11";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/12;"Permission for Template of Action with id 11";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/templates/14;"Read permission for template with id 14.";-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/tickets;;C;R;U;D;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket/*;;-;-;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket/locks;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket/priorities;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket/queues;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket/queues/*;;-;-;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket/states;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/ticket/types;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/communication;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/communication/*;;-;-;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/communication/channels;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/communication/sendertypes;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/communication/systemaddresses;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/organisations;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/contacts;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/links;;C;R;U;D;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/system/textmodules;;-;R;-;-;-
+"Ticket Agent (w/o teams)";Agent;;valid;Resource;/tickets;;C;R;U;D;-
+"Ticket Agent (w/o teams)";Agent;;valid;Object;"/tickets/*{Ticket.QueueID GT 0}";;-;-;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/tickets;;-;R;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/tickets/*/articles/*/flags;;C;R;U;D;-
-"Ticket Reader";Agent;;valid;Resource;/system/slas;;-;R;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/system/ticket/*;;-;-;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/system/ticket;;-;R;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/system/ticket/locks;;-;R;-;-;-
+"Ticket Reader";Agent;;valid;Resource;/system/slas;;-;R;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/system/ticket/priorities;;-;R;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/system/ticket/queues;;-;R;-;-;-
 "Ticket Reader";Agent;;valid;Resource;/system/ticket/states;;-;R;-;-;-
