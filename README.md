@@ -278,6 +278,8 @@ Contact.ColIndex.IsAgent             = "17"
 #Contact.ColIndex.IsCustomer          = "SET:1|0"
 Contact.ColIndex.IsCustomer          = "18"
 Contact.ColIndex.DynamicField_Source = "19"
+Contact.ColIndex.OrgNumbers          = "20"
+
 
 #NOTE: Organisation.Number is used as identifier
 Org.SearchColIndex             = "0"
@@ -334,6 +336,12 @@ If your asset names are unique you can use option `anl`, which enables **a**sset
 
 
 The script **does not** preserve values of previous versions of the updated asset (...yet. it implements an "all-or-nothing-update-approach"). So far there is no default value option for deployment- nor incident-state available. You may use predefined static values within a configuration mapping.
+
+
+
+### Contact with Multiple Organizations
+
+KIX18 allows for multiple organization support, that is assigning a contact to multiple organizations. You can do this by providing a *comma-separated list of organization numbers* in **one** import attribute `OrgNumbers`. This simple approach is supported by `kix18.CSVSync.pl` and `kix18.DBSync.pl`. However, a contact is **always** assigned to its primary organization. The import **does not** check if the primary organization is contained in the list of all organizations, rather the primary organization is added to that list if not already included. 
 
 
 
