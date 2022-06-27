@@ -471,6 +471,31 @@ DynamicField_Type = "type"
 
 PS: the DB-structure for this example in MariaDB/MySQL is contained in `sample/MyCRMDB.sql`
 
+## Mailfilter Import - kix18.MailFilterImport.pl
+
+Script `bin/kix18.MailFilterImport.pl` imports PostmasterFilter from KIX17 to KIX18
+
+
+### Usage
+
+Provide parameter `--if` (input file) export File from ConfigurationImportExport needed
+
+```
+./bin/kix18.MailfilterImport.pl --help
+./bin/kix18.ConfigImportExport.pl --config ./config/kix18.MailFilter.cfg--if ./sample/PostmasterFilter_Sample.json --verbose 3
+```
+
+The script can be used by referring to a configuration instead of requiring each parameter from command line. Please call `./bin/kix18.kix18.MailfilterImport.pl --help` for a detailed parameter listing.
+
+- `config`: path to configuration file instead of command line params
+- `url`: URL to KIX backend API (e.g. https://t12345-api.kix.cloud)
+- `u`: KIX user login
+- `p`: KIX user password
+- `verbose`: makes the script verbose
+- `nossl`: disables SSL verification on backend connect
+- `help`: show help message
+- `if`: source file which is uploaded in config import (setting triggers import)
+
 ----
 ## Contributors
 
