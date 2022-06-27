@@ -1,0 +1,38 @@
+{
+  "MailFilter": [
+    {
+      "Match": [
+        {
+          "Key": "From",
+          "Not": 0,
+          "Value": ".*"
+        }
+      ],
+      "Name": "locked",
+      "Set": [
+        {
+          "Key": "X-KIX-FollowUp-Lock",
+          "Value": "lock"
+        }
+      ],
+      "StopAfterMatch": 0
+    },
+    {
+      "Match": [
+        {
+          "Key": "Subject",
+          "Not": 0,
+          "Value": "TEST"
+        }
+      ],
+      "Name": "001_Test",
+      "Set": [
+        {
+          "Key": "X-KIX-Queue",
+          "Value": "Junk"
+        }
+      ],
+      "StopAfterMatch": 0
+    }
+  ]
+}
