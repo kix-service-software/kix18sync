@@ -337,7 +337,6 @@ else {
 
             if( $OrgIDCache{ $Data{'PrimaryOrgNo'} } ) {
               $Data{PrimaryOrganisationID} = $OrgIDCache{ $Data{'PrimaryOrgNo'} };
-              $Data{OrganisationIDs} = [$OrgIDCache{ $Data{'PrimaryOrgNo'} }];
             }
             else {
               my %OrgID = _KIXAPISearchOrg({
@@ -348,7 +347,6 @@ else {
 
               if ( $OrgID{ID} ) {
                   $Data{PrimaryOrganisationID} = $OrgID{ID};
-                  $Data{OrganisationIDs} = [$OrgID{ID}];
                   $OrgIDCache{ $Data{'PrimaryOrgNo'} } = $OrgID{ID};
               }
               else {
@@ -359,6 +357,57 @@ else {
             }
 
           }
+
+          # get all (other) organization numbers...
+          if( $Data{'OrgNumbers'} ) {
+            my %AllOrgIDs = ();
+            my $AllOrgIDStrg = $Data{'OrgNumbers'} || '';
+
+            # split comma separated organisation numbers and look up each OrgID...
+            for my $CurrOrgNo ( split(",", $AllOrgIDStrg ) ) {
+              my $CurrOrgID = "";
+
+              # check in cache for org-number...
+              if( $OrgIDCache{ $CurrOrgNo } ) {
+                $CurrOrgID = $OrgIDCache{ $CurrOrgNo };
+              }
+              # lookup org-number...
+              else {
+
+                my %OrgID = KIX18API::SearchOrg({
+                  %Config,
+                  Client      => $KIXClient,
+                  SearchValue => $CurrOrgNo || '-',
+                });
+
+                if ( $OrgID{ID} ) {
+                  $CurrOrgID = $OrgID{ID};
+                  $OrgIDCache{ $CurrOrgNo } = $CurrOrgID;
+                }
+                else {
+                  print STDOUT "$LineCount: no organization found for <"
+                    . $CurrOrgNo
+                    . ">.\n"
+                }
+              }
+
+              # remember org-id for this org-number...
+              if( $CurrOrgID ) {
+                $AllOrgIDs{$CurrOrgID} = 1;
+              }
+
+            }
+
+            # build array for all organization IDs..
+            $AllOrgIDs{ $Data{PrimaryOrganisationID} } = 1;
+            my @OrgIDs = keys( %AllOrgIDs ) ;
+            $Data{OrganisationIDs} = \@OrgIDs;
+
+          }
+          else {
+            $Data{OrganisationIDs} = [$Data{PrimaryOrganisationID}];
+          }
+
       }
       elsif( $Config{ObjectType} eq 'Organisation') {
           # (1b) nothing to prepare yet...

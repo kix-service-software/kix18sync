@@ -599,6 +599,7 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
 
     my $LineCount = 0;
 
+
     for my $CurrLine ( @{$CSVDataRef->{$CurrFile}} ) {
 
       # skip first line (ignore header)...
@@ -769,8 +770,52 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
         next;
       }
 
-      my $OrgID = undef;
 
+      # get all (other) organization numbers...
+      my %AllOrgIDs = ();
+      if( $CurrLine->[$Config{'Contact.ColIndex.OrgNumbers'}] ) {
+        my $AllOrgIDStrg = $CurrLine->[$Config{'Contact.ColIndex.OrgNumbers'}] || '';
+
+        # split comma separated organisation numbers and look up each OrgID...
+        for my $CurrOrgNo ( split(",", $AllOrgIDStrg ) ) {
+          my $CurrOrgID = "";
+
+          # check in cache for org-number...
+          if( $OrgIDCache{ $CurrOrgNo } ) {
+            $CurrOrgID = $OrgIDCache{ $CurrOrgNo };
+          }
+          # lookup org-number...
+          else {
+
+            my %OrgID = KIX18API::SearchOrg({
+              %Config,
+              Client      => $KIXClient,
+              SearchValue => $CurrOrgNo || '-',
+            });
+
+            if ( $OrgID{ID} ) {
+              $CurrOrgID = $OrgID{ID};
+              $OrgIDCache{ $CurrOrgNo } = $CurrOrgID;
+            }
+            else {
+              print STDOUT "$LineCount: no organization found for <"
+                . $CurrOrgNo
+                . ">.\n"
+            }
+          }
+
+          # remember org-id for this org-number...
+          if( $CurrOrgID ) {
+            $AllOrgIDs{$CurrOrgID} = 1;
+          }
+        }
+
+      }
+
+      # check primary org id...
+      # NOTE: we do NOT check if primary org is contained in all org list,
+      # rather it is added automatically to this list.
+      my $OrgID = undef;
       if( $OrgIDCache{ $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] } ) {
         $OrgID = $OrgIDCache{ $CurrLine->[$Config{'Contact.ColIndex.PrimaryOrgNo'}] };
 
@@ -793,6 +838,10 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
             . ">.\n"
         }
       }
+
+
+
+
 
       my $ContactValidId = 1;
       if( $Config{'Contact.ColIndex.ValidID'} =~/^SET\:(.+)/) {
@@ -869,8 +918,9 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
       }
 
       if( $OrgID ) {
-        my @OrgIDs = ();
-        push( @OrgIDs, $OrgID);
+        # always add PrimaryOrg to AllOrgIDs...
+        $AllOrgIDs{$OrgID} = 1;
+        my @OrgIDs = keys( %AllOrgIDs ) ;
         $Contact{OrganisationIDs} = \@OrgIDs;
         $Contact{PrimaryOrganisationID} = $OrgID;
       }
