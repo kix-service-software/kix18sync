@@ -38,8 +38,11 @@ Script `bin/kix18.ConfigImportExport.pl` exports and imports various complex con
 - ObjectAction
 - ReportDefinition
 - Template
-
-**NOTE** requires at minimum backend 1535 (v21-rc).
+- TicketType
+- TicketState
+- Team
+- TemplateCategory
+- SysConfigOptionDefinition
 
 ### Usage
 
@@ -66,6 +69,7 @@ The script can be used by referring to a configuration instead of requiring each
 - `of`: to which file the output should be written (setting triggersexport, using filters)
 - `ft`: export filter: comma separates list of object types (e.g. DynamicField,Job,ObjectAction,ReportDefinition,Template)
 - `fn`: export filter: pattern for object name applied in a LIKE search (e.g. *Close*), requires option "ft" to be set
+  - if you're exporting SysConfig options use special name pattern `modified!` in order to export only SysConfig options which differ from default values
 - `if`: source file which is uploaded in config import (setting triggers import)
 - `im`: import setting: mode (one value of Default|ForceAdd|OnlyAdd|OnlyUpdate)
 
