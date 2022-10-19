@@ -137,7 +137,7 @@ $Config{KIXUserName}       = "";
 $Config{KIXPassword}       = "";
 $Config{NoSSLVerify}       = "";
 $Config{KIXPassword}       = "";
-$Config{Verbose}           = "";
+$Config{Verbose}           = "0";
 $Config{FilterType}        = "";
 $Config{FilterName}        = "";
 $Config{ImportFile}        = "";
@@ -191,7 +191,7 @@ for my $CurrKey (qw{KIXURL KIXUserName KIXPassword }) {
 }
 
 
-if( $Config{Verbose} > 1) {
+if( $Config{Verbose} && $Config{Verbose} > 1) {
   print STDOUT "\nFollowing configuration is used:\n";
   for my $CurrKey( sort( keys( %Config ) ) ) {
     print STDOUT sprintf( "\t%30s: ".($Config{$CurrKey} || '-')."\n" , $CurrKey, );

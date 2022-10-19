@@ -64,59 +64,83 @@ sub Connect {
 #-------------------------------------------------------------------------------
 # Config Import Export KIX-API
 sub GetConfigData {
-    my %Params = %{$_[0]};
-    my %Result = ();
-    my $Client = $Params{Client};
-    my $Type = $Params{FilterType} || "";
-    my $Name = $Params{FilterName} || "";
+  my %Params = %{$_[0]};
+  my %Result = ();
+  my $Client = $Params{Client};
+  my $Type   = $Params{FilterType} || "";
+  my $Name   = $Params{FilterName} || "";
 
     print STDOUT "Search config by type IN '$Type'.\n" if ($Params{Verbose} > 3);
 
     my @QueryParams = qw{};
 
-    my %OFM = (
-        'dynamicfield'     => 'DynamicField',
-        'job'              => 'Job',
-        'objectaction'     => 'ObjectAction',
-        'reportdefinition' => 'ReportDefinition',
-        'template'         => 'Template',
-    );
+  my %OFM = (
+    'dynamicfield'    => 'DynamicField',
+    'job'             => 'Job',
+    'objectaction'    => 'ObjectAction',
+    'reportdefinition'=> 'ReportDefinition',
+    'template'        => 'Template',
+    'tickettype'      => 'TicketType',
+    'ticketstate'     => 'TicketState',
+    'team'            => 'Team',
+    'templatecategory' => 'TemplateCategory',
+    'sysconfig'       => 'SysConfigOptionDefinition',
+
+  );
 
     # prepare object filter...
     my @FilterObjects = ();
     for my $FilterObject (split(",", $Type)) {
 
-        if ($FilterObject && $OFM{lc($FilterObject)}) {
-            push(@FilterObjects, $OFM{lc($FilterObject)})
-        }
-        else {
-            print STDERR "\nUnkown or invalid filter object ($FilterObject) will be ignored!\n";
-        }
+    if( $FilterObject && $OFM{lc($FilterObject)} ) {
+      push( @FilterObjects, $OFM{lc($FilterObject)} )
     }
-    if (scalar(@FilterObjects) > 0) {
-        push(@QueryParams, "object=" . to_json(\@FilterObjects));
+    else {
+      print STDERR "\nUnkown or invalid filter object ($FilterObject) will be ignored!\n";
+    }
+  }
+  if( scalar(@FilterObjects) > 0 ) {
+    push( @QueryParams, "object=".to_json( \@FilterObjects) );
+  }
+
+  # prepare name search
+  # NOTE: we've got to use "filter" because not all objects support "search" :-(
+  my $SearchQuery = {};
+  my $FilterOrSearch = "Filter";
+  if( $Name ) {
+    for my $CurrFilterObject ( @FilterObjects ) {
+      my @Conditions = qw{};
+
+      if ($Name eq 'modified!' && $FilterObject eq 'sysconfig') {
+        $FilterOrSearch = "search";
+        push( @Conditions,
+          {
+            "Field"    => "IsModified",
+            "Operator" => "EQ",
+            "Type"     => "STRING",
+            "Value"    => "1"
+          }
+        );
+      }
+      else {
+        push( @Conditions,
+          {
+            "Field"    => "Name",
+            "Operator" => "LIKE",
+            "Type"     => "STRING",
+            "Value"    => $Name
+          }
+        );
+      }
+
+      $SearchQuery->{$CurrFilterObject}->{AND} =\@Conditions;
     }
 
-    # prepare name search
-    # NOTE: we've got to use "filter" because not all objects support "search"
-    my $SearchQuery = {};
-    if ($Name) {
-        for my $CurrFilterObject (@FilterObjects) {
-            my @Conditions = qw{};
-            push(@Conditions,
-                {
-                    "Field"    => "Name",
-                    "Operator" => "LIKE",
-                    "Type"     => "STRING",
-                    "Value"    => $Name
-                }
-            );
-            $SearchQuery->{$CurrFilterObject}->{AND} = \@Conditions;
-        }
-
-        if (keys(%{$SearchQuery})) {
-            push(@QueryParams, "filter=" . to_json($SearchQuery));
-        }
+    if( keys( %{$SearchQuery} ) && $FilterOrSearch eq 'search') {
+      push( @QueryParams, "search=".to_json( $SearchQuery) );
+    }
+    elsif( keys( %{$SearchQuery} ) ) {
+      push( @QueryParams, "filter=".to_json( $SearchQuery) );
     }
 
     my $QueryParamStr = join(";", @QueryParams);
