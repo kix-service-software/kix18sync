@@ -85,23 +85,22 @@ sub GetConfigData {
     'team'            => 'Team',
     'templatecategory' => 'TemplateCategory',
     'sysconfig'       => 'SysConfigOptionDefinition',
-
   );
 
     # prepare object filter...
     my @FilterObjects = ();
     for my $FilterObject (split(",", $Type)) {
+      if( $FilterObject && $OFM{lc($FilterObject)} ) {
+        push( @FilterObjects, $OFM{lc($FilterObject)} )
+      }
+      else {
+        print STDERR "\nUnkown or invalid filter object ($FilterObject) will be ignored!\n";
+      }
+    }
 
-    if( $FilterObject && $OFM{lc($FilterObject)} ) {
-      push( @FilterObjects, $OFM{lc($FilterObject)} )
+    if( scalar(@FilterObjects) > 0 ) {
+      push( @QueryParams, "object=".to_json( \@FilterObjects) );
     }
-    else {
-      print STDERR "\nUnkown or invalid filter object ($FilterObject) will be ignored!\n";
-    }
-  }
-  if( scalar(@FilterObjects) > 0 ) {
-    push( @QueryParams, "object=".to_json( \@FilterObjects) );
-  }
 
   # prepare name search
   # NOTE: we've got to use "filter" because not all objects support "search" :-(
@@ -111,7 +110,7 @@ sub GetConfigData {
     for my $CurrFilterObject ( @FilterObjects ) {
       my @Conditions = qw{};
 
-      if ($Name eq 'modified!' && $FilterObject eq 'sysconfig') {
+      if ($Name eq 'modified!' && $CurrFilterObject eq 'sysconfig') {
         $FilterOrSearch = "search";
         push( @Conditions,
           {
@@ -135,40 +134,41 @@ sub GetConfigData {
 
       $SearchQuery->{$CurrFilterObject}->{AND} =\@Conditions;
     }
+  }
 
-    if( keys( %{$SearchQuery} ) && $FilterOrSearch eq 'search') {
-      push( @QueryParams, "search=".to_json( $SearchQuery) );
-    }
-    elsif( keys( %{$SearchQuery} ) ) {
-      push( @QueryParams, "filter=".to_json( $SearchQuery) );
-    }
+  if( keys( %{$SearchQuery} ) && $FilterOrSearch eq 'search') {
+    push( @QueryParams, "search=".to_json( $SearchQuery) );
+  }
+  elsif( keys( %{$SearchQuery} ) ) {
+    push( @QueryParams, "filter=".to_json( $SearchQuery) );
+  }
 
-    my $QueryParamStr = join(";", @QueryParams);
-    print STDOUT "\nKIX18API::GetConfigData Query"
-        . Dumper(\@QueryParams)
-        . "\n" if ($Params{Verbose} > 6);
+  my $QueryParamStr = join(";", @QueryParams);
+  print STDOUT "\nKIX18API::GetConfigData Query"
+      . Dumper(\@QueryParams)
+      . "\n" if ($Params{Verbose} > 6);
 
-    $Client->GET("/api/v1/system/serialization?$QueryParamStr");
+  $Client->GET("/api/v1/system/serialization?$QueryParamStr");
 
-    print STDOUT "\nKIX18API::GetConfigData API-URL=/api/v1/system/serialization?"
-        . "$QueryParamStr.\n" if ($Params{Verbose} > 5);
+  print STDOUT "\nKIX18API::GetConfigData API-URL=/api/v1/system/serialization?"
+      . "$QueryParamStr.\n" if ($Params{Verbose} > 5);
 
-    if ($Client->responseCode() ne "200") {
-        print STDERR "\nSearch for config objects failed (Response " . $Client->responseCode() . ")!\n";
-        exit(-1);
-    }
-    else {
-        my $Response = from_json($Client->responseContent());
-        print STDOUT "\nKIX18API::GetConfigData Response " . Dumper($Response) . "\n" if ($Params{Verbose} > 7);
+  if ($Client->responseCode() ne "200") {
+      print STDERR "\nSearch for config objects failed (Response " . $Client->responseCode() . ")!\n";
+      exit(-1);
+  }
+  else {
+      my $Response = from_json($Client->responseContent());
+      print STDOUT "\nKIX18API::GetConfigData Response " . Dumper($Response) . "\n" if ($Params{Verbose} > 7);
 
-        if ($Response->{SerializationData}) {
-            $Result{"Content"} = $Response->{SerializationData}->{"Content"};
-            $Result{"ContentType"} = $Response->{SerializationData}->{"ContentType"};
-            $Result{"Filename"} = $Response->{SerializationData}->{"Filename"};
-        }
-    }
+      if ($Response->{SerializationData}) {
+          $Result{"Content"} = $Response->{SerializationData}->{"Content"};
+          $Result{"ContentType"} = $Response->{SerializationData}->{"ContentType"};
+          $Result{"Filename"} = $Response->{SerializationData}->{"Filename"};
+      }
+  }
 
-    return \%Result;
+  return \%Result;
 }
 
 
