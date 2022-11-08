@@ -1,4 +1,12 @@
 #!/usr/bin/perl
+# --
+# Some generic methods for accessing KIX18 REST API
+# Copyright (C) 2006-2022 c.a.p.e. IT GmbH, http://www.cape-it.de/
+#
+# written/edited by:
+# * Torsten(dot)Thau(at)cape(dash)it(dot)de
+#
+# --
 package KIX18API;
 
 use utf8;
