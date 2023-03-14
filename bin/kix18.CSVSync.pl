@@ -855,10 +855,12 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
       }
 
       
+      # get fixed contact attributes..
       my %Contact = (
           ValidID         => $ContactValidId,
       );
       
+      # get optional contact attributes..
       my @ContactDefaultFields = qw( City Comment Country Email Fax Firstname Lastname Login Mobile Phone Street Title Zip );
       for my $ContactElement (@ContactDefaultFields) {
         if ($Config{'Contact.ColIndex.'.$ContactElement} && $CurrLine->[$Config{'Contact.ColIndex.'.$ContactElement}]) {
@@ -1518,11 +1520,6 @@ sub _BuildAssetVersionData {
 
     return \%Result;
 }
-
-
-
-
-
 
 #-------------------------------------------------------------------------------
 # FILE HANDLING FUNCTIONS
