@@ -529,7 +529,10 @@ sub _KIXAPIConnect {
 
     # connect to webservice
     my $AccessToken = "";
-    my $Headers = { Accept => 'application/json', };
+    my $Headers = {
+        'Accept'       => 'application/json',
+        'Content-Type' => 'application/json',
+    };
     my $RequestBody = {
         "UserLogin" => $Config{KIXUserName},
         "Password"  => $Config{KIXPassword},
@@ -625,6 +628,9 @@ sub _KIXAPIRolePermissionCreate {
     return $Result if (!$Params{Permission}->{'Target'});
     return $Result if (!$Params{Permission}->{'TypeID'});
 
+    my $Headers = {
+        'Content-Type' => 'application/json',
+    };
     my $RequestBody = {
         "Permission" => {
             %{$Params{Permission}}
@@ -633,7 +639,8 @@ sub _KIXAPIRolePermissionCreate {
 
     $Params{Client}->POST(
         "/api/v1/system/roles/" . $Params{RoleID} . "/permissions",
-        encode("utf-8", to_json($RequestBody))
+        encode("utf-8", to_json($RequestBody)),
+        $Headers
     );
 
     #  create ok...
@@ -703,6 +710,9 @@ sub _KIXAPICreateRole {
     my %Params = %{$_[0]};
     my $Result = 0;
 
+    my $Headers = {
+        'Content-Type' => 'application/json',
+    };
     my $RequestBody = {
         "Role" => {
             %{$Params{Role}}
@@ -711,7 +721,8 @@ sub _KIXAPICreateRole {
 
     $Params{Client}->POST(
         "/api/v1/system/roles",
-        encode("utf-8", to_json($RequestBody))
+        encode("utf-8", to_json($RequestBody)),
+        $Headers
     );
 
     #  create ok...
@@ -734,6 +745,9 @@ sub _KIXAPIUpdateRole {
     my %Params = %{$_[0]};
     my $Result = 0;
 
+    my $Headers = {
+        'Content-Type' => 'application/json',
+    };
     my $RequestBody = {
         "Role" => {
             %{$Params{Role}}
@@ -742,7 +756,8 @@ sub _KIXAPIUpdateRole {
 
     $Params{Client}->PATCH(
         "/api/v1/system/roles/" . $Params{Role}->{ID},
-        encode("utf-8", to_json($RequestBody))
+        encode("utf-8", to_json($RequestBody)),
+        $Headers
     );
 
     #  update ok...
@@ -850,6 +865,21 @@ sub _ReadFile {
     print STDOUT "Got" . Dumper($Result) . ".\n" if ($Config{Verbose} > 3);
 
     close $FH;
+
+    if (
+        ref( $Result ) eq 'ARRAY'
+        && $Params{CSVEncoding} =~ m/^(?:utf8|utf-8)$/i
+    ) {
+        for my $Row ( @{ $Result } ) {
+            next if ( ref( $Row ) ne 'ARRAY' );
+            for my $Column ( @{ $Row } ) {
+                next if ( !defined( $Column ) );
+                next if ( !Encode::is_utf8( $Column ) );
+
+                $Column = Encode::encode_utf8( $Column );
+            }
+        }
+    }
 
     return $Result;
 }
