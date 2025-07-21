@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # --
 # Some generic methods for accessing KIX18 REST API
-# Copyright (C) 2006-2022 c.a.p.e. IT GmbH, http://www.cape-it.de/
+# Copyright (C) 2006-2025 KIX Service Software GmbH, https://kixdesk.com
 #
 # written/edited by:
-# * Torsten(dot)Thau(at)cape(dash)it(dot)de
+# * Torsten(dot)Thau(at)kixdesk(dot)com
 #
 # --
 package KIX18API;
