@@ -382,17 +382,29 @@ sub SearchContact {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    print STDOUT "Search contact by Email EQ '$IdentStrg'"
+    if( $IdentAttr =~ /^Email\d*/ ) {
+        push(@Conditions,
+            {
+                "Field"    => "Email",
+                "Operator" => "EQ",
+                "Type"     => "STRING",
+                "Value"    => $IdentStrg
+            }
+        );
+    }
+    elsif( $IdentAttr eq 'UserLogin' || $IdentAttr eq 'Login' ) {
+        push(@Conditions,
+            {
+                "Field"    => "UserLogin",
+                "Operator" => "EQ",
+                "Type"     => "STRING",
+                "Value"    => $IdentStrg
+            }
+        );        
+    }
+    print STDOUT "Search contact by $IdentAttr EQ '$IdentStrg'"
         . ".\n" if ($Params{Verbose} > 3);
 
-    push(@Conditions,
-        {
-            "Field"    => "Email",
-            "Operator" => "EQ",
-            "Type"     => "STRING",
-            "Value"    => $IdentStrg
-        }
-    );
 
     my $Query = {};
     $Query->{Contact}->{AND} = \@Conditions;
@@ -668,7 +680,7 @@ sub SearchUser {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    print STDOUT "Search user by UserLogin EQ '$IdentStrg'"
+    print STDOUT "\nSearch contact/user by UserLogin EQ '$IdentStrg'"
         . ".\n" if ($Params{Verbose} > 3);
 
     push(@Conditions,

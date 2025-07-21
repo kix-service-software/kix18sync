@@ -1,4 +1,7 @@
 "Full Queue Name";"Calendar Name";Validity;Comment;FollowUpId;"System Address Email";"UnlockTimeOut"
-"Sales";;valid;;1;"Sales@example.com";1440
-"Sales::Team 1";;valid;;1;"Sales-team1@example.com";720
-"Sales::Team 2";;valid;;1;"sales-team2@example.com";360
+"Sales";;valid;;1;"sales@example.com";1440
+"Facility Management";;valid;;1;"fm@example.com";1440
+"SAP Business Consulting";;valid;;1;"sap-support@example.com";1440
+"Printer Support";;valid;;1;"printer-support@example.com";1440
+"Managed Services";;valid;;1;"support@example.com";1440
+"Desktop Client Management";;valid;;1;"support@example.com";1440
