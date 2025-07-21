@@ -1014,7 +1014,7 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
       }
 
       $LineCount++;
-exit(0) if $LineCount>2;
+
     }
   }
 
