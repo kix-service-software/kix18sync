@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
 # --
 # bin/kix18.DBSync.pl - imports DB data into KIX18
-# Copyright (C) 2006-2021 c.a.p.e. IT GmbH, http://www.cape-it.de/
+# Copyright (C) 2006-2025 KIX Service Software GmbH, https://kixdesk.com
 #
 # written/edited by:
-# * Torsten(dot)Thau(at)cape(dash)it(dot)de
+# * Torsten(dot)Thau(at)kixdesk(dot)com
 #
 # --
 # This program is free software; you can redistribute it and/or modify

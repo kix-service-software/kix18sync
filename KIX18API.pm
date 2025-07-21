@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # --
 # Some generic methods for accessing KIX18 REST API
-# Copyright (C) 2006-2022 c.a.p.e. IT GmbH, http://www.cape-it.de/
+# Copyright (C) 2006-2025 KIX Service Software GmbH, https://kixdesk.com
 #
 # written/edited by:
-# * Torsten(dot)Thau(at)cape(dash)it(dot)de
+# * Torsten(dot)Thau(at)kixdesk(dot)com
 #
 # --
 package KIX18API;
@@ -396,17 +396,29 @@ sub SearchContact {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    print STDOUT "Search contact by Email EQ '$IdentStrg'"
+    if( $IdentAttr =~ /^Email\d*/ ) {
+        push(@Conditions,
+            {
+                "Field"    => "Email",
+                "Operator" => "EQ",
+                "Type"     => "STRING",
+                "Value"    => $IdentStrg
+            }
+        );
+    }
+    elsif( $IdentAttr eq 'UserLogin' || $IdentAttr eq 'Login' ) {
+        push(@Conditions,
+            {
+                "Field"    => "UserLogin",
+                "Operator" => "EQ",
+                "Type"     => "STRING",
+                "Value"    => $IdentStrg
+            }
+        );        
+    }
+    print STDOUT "Search contact by $IdentAttr EQ '$IdentStrg'"
         . ".\n" if ($Params{Verbose} > 3);
 
-    push(@Conditions,
-        {
-            "Field"    => "Email",
-            "Operator" => "EQ",
-            "Type"     => "STRING",
-            "Value"    => $IdentStrg
-        }
-    );
 
     my $Query = {};
     $Query->{Contact}->{AND} = \@Conditions;
@@ -698,7 +710,7 @@ sub SearchUser {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    print STDOUT "Search user by UserLogin EQ '$IdentStrg'"
+    print STDOUT "\nSearch contact/user by UserLogin EQ '$IdentStrg'"
         . ".\n" if ($Params{Verbose} > 3);
 
     push(@Conditions,

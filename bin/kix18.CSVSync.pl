@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
 # --
 # bin/kix18.CSVSync.pl - imports CSV data into KIX18
-# Copyright (C) 2006-2022 c.a.p.e. IT GmbH, http://www.cape-it.de/
+# Copyright (C) 2006-2025 KIX Service Software GmbH, https://kixdesk.com
 #
 # written/edited by:
-# * Torsten(dot)Thau(at)cape(dash)it(dot)de
+# * Torsten(dot)Thau(at)kixdesk(dot)com
 #
 # --
 # This program is free software; you can redistribute it and/or modify
@@ -594,6 +594,15 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
     { %Config, Client => $KIXClient}
   );
 
+  # check for givven identifier attribute..
+  if( $Config{'Contact.IdentifierAttribute'} && ($Config{'Contact.IdentifierAttribute'} eq 'UserLogin' || $Config{'Contact.IdentifierAttribute'} eq 'Email' )) {
+    $Config{Identifier} = $Config{'Contact.IdentifierAttribute'};
+  }
+  else {
+    $Config{Identifier} = 'Email';
+    print STDOUT "Contact import: no valid identifier attribute given ('UserLogin'|'Email') - assuming 'Email'.\n";
+  }
+
   # process import lines
   for my $CurrFile ( keys( %{$CSVDataRef}) ) {
 
@@ -857,6 +866,23 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
       
       # get fixed contact attributes..
       my %Contact = (
+          City            => $CurrLine->[$Config{'Contact.ColIndex.City'}],
+          Comment         => $CurrLine->[$Config{'Contact.ColIndex.Comment'}],
+          Country         => $CurrLine->[$Config{'Contact.ColIndex.Country'}],
+          Email           => $CurrLine->[$Config{'Contact.ColIndex.Email'}],
+          Email1          => $CurrLine->[$Config{'Contact.ColIndex.Email1'}],
+          Email2          => $CurrLine->[$Config{'Contact.ColIndex.Email2'}],
+          Email3          => $CurrLine->[$Config{'Contact.ColIndex.Email3'}],
+          Email4          => $CurrLine->[$Config{'Contact.ColIndex.Email4'}],
+          Email5          => $CurrLine->[$Config{'Contact.ColIndex.Email5'}],
+          Fax             => $CurrLine->[$Config{'Contact.ColIndex.Fax'}],
+          Firstname       => $CurrLine->[$Config{'Contact.ColIndex.Firstname'}],
+          Lastname        => $CurrLine->[$Config{'Contact.ColIndex.Lastname'}],
+          Login           => $CurrLine->[$Config{'Contact.ColIndex.Login'}],
+          Mobile          => $CurrLine->[$Config{'Contact.ColIndex.Mobile'}],
+          Phone           => $CurrLine->[$Config{'Contact.ColIndex.Phone'}],
+          Street          => $CurrLine->[$Config{'Contact.ColIndex.Street'}],
+          Title           => $CurrLine->[$Config{'Contact.ColIndex.Title'}],
           ValidID         => $ContactValidId,
       );
       
@@ -925,6 +951,8 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
         $Contact{PrimaryOrganisationID} = $OrgID;
       }
 
+
+
       # search contact...
       my %SearchResult = KIX18API::SearchContact({
         %Config,
@@ -936,7 +964,7 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
       if ( $SearchResult{Msg} ) {
         push( @{$CurrLine}, 'ERROR');
         push( @{$CurrLine}, $SearchResult{Msg});
-
+        print STDOUT "$LineCount: Search for contact failed <$CurrLine->[$Config{'Contact.SearchColIndex'}]> - $SearchResult{Msg}.\n";
       }
 
       # update existing $Contact...
