@@ -623,9 +623,12 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
       if( $CurrLine->[$Config{'Contact.ColIndex.Login'}] ) {
 
           # extract role names
-          my $RolesStrg = $CurrLine->[$Config{'Contact.ColIndex.Roles'}];
-          utf8::encode($RolesStrg);
-          my @RoleArr = split( ',', $RolesStrg );
+          my @RoleArr = ();
+          if ($Config{'Contact.ColIndex.Roles'} && $CurrLine->[$Config{'Contact.ColIndex.Roles'}]) {
+            my $RolesStrg = $CurrLine->[$Config{'Contact.ColIndex.Roles'}];
+            utf8::encode($RolesStrg);
+            @RoleArr = split( /\s*,\s*/, $RolesStrg );
+          }
 
           # get IsAgent/-Customer values...
           my $IsAgent    =  "0";
@@ -679,7 +682,10 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
 
           # set user password...
           # TO DO - generate some pw if not given...
-          my $UserPw = $CurrLine->[$Config{'Contact.ColIndex.Password'}] || 'Passw0rd!';
+          my $UserPw = 'Passw0rd!';
+          if ($Config{'Contact.ColIndex.Password'} && $CurrLine->[$Config{'Contact.ColIndex.Password'}]) {
+            $UserPw = $CurrLine->[$Config{'Contact.ColIndex.Password'}];
+          }
 
           # build data hash
           my %User = (
@@ -782,7 +788,8 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
 
       # get all (other) organization numbers...
       my %AllOrgIDs = ();
-      if( $CurrLine->[$Config{'Contact.ColIndex.OrgNumbers'}] ) {
+      
+      if( $Config{'Contact.ColIndex.OrgNumbers'} && $CurrLine->[$Config{'Contact.ColIndex.OrgNumbers'}] ) {
         my $AllOrgIDStrg = $CurrLine->[$Config{'Contact.ColIndex.OrgNumbers'}] || '';
 
         # split comma separated organisation numbers and look up each OrgID...
@@ -848,7 +855,6 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
         }
       }
 
-
       my $ContactValidId = 1;
       if( $Config{'Contact.ColIndex.ValidID'} =~/^SET\:(.+)/) {
         $ContactValidId = $1;
@@ -857,6 +863,8 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
         $ContactValidId = $CurrLine->[$Config{'Contact.ColIndex.ValidID'}];
       }
 
+      
+      # get fixed contact attributes..
       my %Contact = (
           City            => $CurrLine->[$Config{'Contact.ColIndex.City'}],
           Comment         => $CurrLine->[$Config{'Contact.ColIndex.Comment'}],
@@ -876,8 +884,15 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
           Street          => $CurrLine->[$Config{'Contact.ColIndex.Street'}],
           Title           => $CurrLine->[$Config{'Contact.ColIndex.Title'}],
           ValidID         => $ContactValidId,
-          Zip             => $CurrLine->[$Config{'Contact.ColIndex.Zip'}],
       );
+      
+      # get optional contact attributes..
+      my @ContactDefaultFields = qw( City Comment Country Email Fax Firstname Lastname Login Mobile Phone Street Title Zip );
+      for my $ContactElement (@ContactDefaultFields) {
+        if ($Config{'Contact.ColIndex.'.$ContactElement} && $CurrLine->[$Config{'Contact.ColIndex.'.$ContactElement}]) {
+          $Contact{$ContactElement} = $CurrLine->[$Config{'Contact.ColIndex.'.$ContactElement}]
+        }
+      }
 
       # now get all all dynamic DynamicFields
       my @LineDFs = qw{};
@@ -1043,18 +1058,17 @@ elsif ( $Config{ObjectType} eq 'Organisation') {
 
       # get fixed organization attributes..
       my %Organization = (
-          City            => $CurrLine->[$Config{'Org.ColIndex.City'}],
           Number   => $CurrLine->[$Config{'Org.ColIndex.Number'}],
-          Name     => $CurrLine->[$Config{'Org.ColIndex.Name'}],
-          Comment  => $CurrLine->[$Config{'Org.ColIndex.Comment'}],
-          Street   => $CurrLine->[$Config{'Org.ColIndex.Street'}],
-          City     => $CurrLine->[$Config{'Org.ColIndex.City'}],
-          Zip      => $CurrLine->[$Config{'Org.ColIndex.Zip'}],
-          Country  => $CurrLine->[$Config{'Org.ColIndex.Country'}],
-          Url      => $CurrLine->[$Config{'Org.ColIndex.Url'}],
           ValidID  => $ValidId,
       );
-
+      
+      # get optional organization attributes..
+      my @OrganizationDefaultFields = qw( City Name Comment Street City Zip Country Url );
+      for my $OrganizationElement (@OrganizationDefaultFields) {
+        if ($Config{'Org.ColIndex.'.$OrganizationElement} && $CurrLine->[$Config{'Org.ColIndex.'.$OrganizationElement}]) {
+          $Organization{$OrganizationElement} = $CurrLine->[$Config{'Org.ColIndex.'.$OrganizationElement}];
+        }
+      }
 
       # now get all all dynamic DynamicFields
       my @LineDFs = qw{};
@@ -1534,11 +1548,6 @@ sub _BuildAssetVersionData {
 
     return \%Result;
 }
-
-
-
-
-
 
 #-------------------------------------------------------------------------------
 # FILE HANDLING FUNCTIONS

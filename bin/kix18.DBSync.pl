@@ -510,7 +510,10 @@ sub _KIXAPIConnect {
 
   # connect to webservice
   my $AccessToken = "";
-  my $Headers = {Accept => 'application/json', };
+  my $Headers = {
+      'Accept'       => 'application/json',
+      'Content-Type' => 'application/json',
+  };
   my $RequestBody = {
   	"UserLogin" => $Config{KIXUserName},
   	"Password" =>  $Config{KIXPassword},
@@ -617,6 +620,9 @@ sub _KIXAPIUpdateContact {
   my %Params = %{$_[0]};
   my $Result = 0;
 
+  my $Headers = {
+      'Content-Type' => 'application/json',
+  };
   my $RequestBody = {
     "Contact" => {
         %{$Params{Contact}}
@@ -624,7 +630,8 @@ sub _KIXAPIUpdateContact {
   };
 
   $Params{Client}->PATCH( "/api/v1/contacts/".$Params{Contact}->{ID},
-      encode("utf-8", to_json( $RequestBody ))
+      encode("utf-8", to_json( $RequestBody )),
+      $Headers
   );
 
   #  update ok...
@@ -651,6 +658,9 @@ sub _KIXAPICreateContact {
   my %Params = %{$_[0]};
   my $Result = 0;
 
+  my $Headers = {
+      'Content-Type' => 'application/json',
+  };
   my $RequestBody = {
     "Contact" => {
         %{$Params{Contact}}
@@ -659,7 +669,8 @@ sub _KIXAPICreateContact {
 
   $Params{Client}->POST(
       "/api/v1/contacts",
-      encode("utf-8",to_json( $RequestBody ))
+      encode("utf-8",to_json( $RequestBody )),
+      $Headers
   );
 
   if( $Params{Client}->responseCode() ne "201") {
@@ -746,6 +757,9 @@ sub _KIXAPIUpdateOrg {
   my %Params = %{$_[0]};
   my $Result = 0;
 
+  my $Headers = {
+      'Content-Type' => 'application/json',
+  };
   my $RequestBody = {
     "Organisation" => {
         %{$Params{Organization}}
@@ -754,7 +768,8 @@ sub _KIXAPIUpdateOrg {
 
   $Params{Client}->PATCH(
       "/api/v1/organisations/".$Params{Organization}->{ID},
-      encode("utf-8",to_json( $RequestBody ))
+      encode("utf-8",to_json( $RequestBody )),
+      $Headers
   );
 
   #  update ok...
@@ -778,6 +793,9 @@ sub _KIXAPICreateOrg {
   my %Params = %{$_[0]};
   my $Result = 0;
 
+  my $Headers = {
+      'Content-Type' => 'application/json',
+  };
   my $RequestBody = {
     "Organisation" => {
         %{$Params{Organization}}
@@ -787,7 +805,8 @@ sub _KIXAPICreateOrg {
 
   $Params{Client}->POST(
       "/api/v1/organisations",
-      encode("utf-8", to_json( $RequestBody ))
+      encode("utf-8", to_json( $RequestBody )),
+      $Headers
   );
 
   if( $Params{Client}->responseCode() ne "201") {
