@@ -1,3 +1,6 @@
 OrganisationSearch.pm
 kixintern.*
 .DS_Store
+kix18.CSVSync.*.cfg
+createExampleTickets*sh
+dataImport*sh
