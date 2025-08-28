@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # --
 # Some generic methods for accessing KIX18 REST API
-# Copyright (C) 2006-2025 KIX Service Software GmbH, https://kixdesk.com
+# Copyright (C) 2006-2022 c.a.p.e. IT GmbH, http://www.cape-it.de/
 #
 # written/edited by:
-# * Torsten(dot)Thau(at)kixdesk(dot)com
+# * Torsten(dot)Thau(at)cape(dash)it(dot)de
 #
 # --
 package KIX18API;
@@ -24,10 +24,7 @@ sub Connect {
 
     # connect to webservice
     my $AccessToken = "";
-    my $Headers = {
-        'Accept'       => 'application/json',
-        'Content-Type' => 'application/json',
-    };
+    my $Headers = { Accept => 'application/json', };
     my $RequestBody = {
         "UserLogin" => $Params{KIXUserName},
         "Password"  => $Params{KIXPassword},
@@ -190,10 +187,7 @@ sub UploadConfigData {
 
     return 0 if (!$Params{Content});
 
-    my $Headers = {
-        'Accept'       => 'application/json',
-        'Content-Type' => 'application/json',
-    };
+    my $Headers = { Accept => 'application/json', };
     my $RequestBody = {
         "content" => $Params{Content}
     };
@@ -311,9 +305,6 @@ sub UpdateSLA {
 
     $Params{SLA}->{ValidID} = $Params{SLA}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "SLA" => {
             %{$Params{SLA}}
@@ -322,8 +313,7 @@ sub UpdateSLA {
 
     $Params{Client}->PATCH(
         "/api/v1/system/slas/" . $Params{SLA}->{ID},
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     #  update ok...
@@ -349,9 +339,6 @@ sub CreateSLA {
 
     $Params{SLA}->{ValidID} = $Params{SLA}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "SLA" => {
             %{$Params{SLA}}
@@ -359,8 +346,7 @@ sub CreateSLA {
     };
     $Params{Client}->POST(
         "/api/v1/system/slas",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {
@@ -396,29 +382,17 @@ sub SearchContact {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    if( $IdentAttr =~ /^Email\d*/ ) {
-        push(@Conditions,
-            {
-                "Field"    => "Email",
-                "Operator" => "EQ",
-                "Type"     => "STRING",
-                "Value"    => $IdentStrg
-            }
-        );
-    }
-    elsif( $IdentAttr eq 'UserLogin' || $IdentAttr eq 'Login' ) {
-        push(@Conditions,
-            {
-                "Field"    => "UserLogin",
-                "Operator" => "EQ",
-                "Type"     => "STRING",
-                "Value"    => $IdentStrg
-            }
-        );        
-    }
-    print STDOUT "Search contact by $IdentAttr EQ '$IdentStrg'"
+    print STDOUT "Search contact by Email EQ '$IdentStrg'"
         . ".\n" if ($Params{Verbose} > 3);
 
+    push(@Conditions,
+        {
+            "Field"    => "Email",
+            "Operator" => "EQ",
+            "Type"     => "STRING",
+            "Value"    => $IdentStrg
+        }
+    );
 
     my $Query = {};
     $Query->{Contact}->{AND} = \@Conditions;
@@ -453,9 +427,6 @@ sub UpdateContact {
 
     $Params{Contact}->{ValidID} = $Params{Contact}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "Contact" => {
             %{$Params{Contact}}
@@ -464,8 +435,7 @@ sub UpdateContact {
 
     $Params{Client}->PATCH(
         "/api/v1/contacts/" . $Params{Contact}->{ID},
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     #  update ok...
@@ -477,7 +447,7 @@ sub UpdateContact {
         print STDERR "Updating contact failed (Response " . $Params{Client}->responseCode() . ")!\n";
         print STDERR "\nRequestBody: $RequestBody";
         print STDERR "\nRequestBody: " . Dumper($Params{Contact});
-        exit(-1);
+        return(0);
     }
 
     return $Result;
@@ -492,9 +462,6 @@ sub CreateContact {
 
     $Params{Contact}->{ValidID} = $Params{Contact}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "Contact" => {
             %{$Params{Contact}}
@@ -503,8 +470,7 @@ sub CreateContact {
 
     $Params{Client}->POST(
         "/api/v1/contacts",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {
@@ -590,9 +556,6 @@ sub UpdateOrg {
 
     $Params{Organization}->{ValidID} = $Params{Organization}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "Organisation" => {
             %{$Params{Organization}}
@@ -601,8 +564,7 @@ sub UpdateOrg {
 
     $Params{Client}->PATCH(
         "/api/v1/organisations/" . $Params{Organization}->{ID},
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     #  update ok...
@@ -626,9 +588,6 @@ sub CreateOrg {
 
     $Params{Organization}->{ValidID} = $Params{Organization}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "Organisation" => {
             %{$Params{Organization}}
@@ -637,8 +596,7 @@ sub CreateOrg {
 
     $Params{Client}->POST(
         "/api/v1/organisations",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {
@@ -667,7 +625,7 @@ sub RoleList {
 
     if ($Client->responseCode() ne "200") {
         print STDERR "\nSearch for roles failed (Response " . $Client->responseCode() . ")!\n";
-        exit(-1);
+        return(0);
     }
     else {
         my $Response = from_json($Client->responseContent());
@@ -710,7 +668,7 @@ sub SearchUser {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    print STDOUT "\nSearch contact/user by UserLogin EQ '$IdentStrg'"
+    print STDOUT "\nSearch user by UserLogin EQ '$IdentStrg'"
         . ".\n" if ($Params{Verbose} > 3);
 
     push(@Conditions,
@@ -756,9 +714,6 @@ sub UpdateUser {
 
     $Params{User}->{ValidID} = $Params{User}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "User" => {
             %{$Params{User}}
@@ -767,8 +722,7 @@ sub UpdateUser {
 
     $Params{Client}->PATCH(
         "/api/v1/system/users/" . $Params{User}->{ID},
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     #  update ok...
@@ -798,9 +752,6 @@ sub CreateUser {
 
     $Params{User}->{ValidID} = $Params{User}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "User" => {
             %{$Params{User}}
@@ -808,8 +759,7 @@ sub CreateUser {
     };
     $Params{Client}->POST(
         "/api/v1/system/users",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {
@@ -891,9 +841,6 @@ sub UpdateUserRoles {
     }
 
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     # adding current roles...
     print STDOUT "Keeping/adding roles <" . join(",", keys(%RoleMap)) . "> to user id <$Params{User}->{ID}>"
         . ".\n" if ($Params{Verbose} > 5);
@@ -905,8 +852,7 @@ sub UpdateUserRoles {
         };
         $Params{Client}->POST(
             "/api/v1/system/users/" . $Params{User}->{ID} . "/roleids",
-            encode("utf-8", to_json($RequestBody)),
-            $Headers
+            encode("utf-8", to_json($RequestBody))
         );
 
         if ($Params{Client}->responseCode() ne "201") {
@@ -1028,17 +974,13 @@ sub UpdateAsset {
     my %Params = %{$_[0]};
     my $Result = 0;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "ConfigItemVersion" => $Params{'Asset'}->{'Version'},
     };
 
     $Params{Client}->POST(
         "/api/v1/cmdb/configitems/" . $Params{Asset}->{ID} . "/versions",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     # no update required...
@@ -1065,9 +1007,6 @@ sub CreateAsset {
     my %Params = %{$_[0]};
     my $Result = 0;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     delete($Params{'Asset'}->{'Number'});
     my $RequestBody = {
         'ConfigItem' => $Params{'Asset'},
@@ -1075,8 +1014,7 @@ sub CreateAsset {
 
     $Params{Client}->POST(
         "/api/v1/cmdb/configitems",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {
@@ -1323,9 +1261,6 @@ sub UpdateQueue {
 
     $Params{Queue}->{ValidID} = $Params{Queue}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "Queue" => {
             %{$Params{Queue}}
@@ -1334,8 +1269,7 @@ sub UpdateQueue {
 
     $Params{Client}->PATCH(
         "/api/v1/system/ticket/queues/" . $Params{Queue}->{ID},
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     #  update ok...
@@ -1359,9 +1293,6 @@ sub CreateQueue {
 
     $Params{Queue}->{ValidID} = $Params{Queue}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "Queue" => {
             %{$Params{Queue}}
@@ -1370,8 +1301,7 @@ sub CreateQueue {
 
     $Params{Client}->POST(
         "/api/v1/system/ticket/queues",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {
@@ -1436,9 +1366,6 @@ sub CreateSystemAddress {
 
     $Params{SystemAddress}->{ValidID} = $Params{SystemAddress}->{ValidID} || 1;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "SystemAddress" => {
             %{$Params{SystemAddress}}
@@ -1446,8 +1373,7 @@ sub CreateSystemAddress {
     };
     $Params{Client}->POST(
         "/api/v1/system/communication/systemaddresses",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {
@@ -1494,9 +1420,6 @@ sub UpdatePostmasterXHeaderConfig {
     my %Params = %{$_[0]};
     my $Result = 0;
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "SysConfigOption" => {
             %{$Params{SysConfigOption}}
@@ -1505,8 +1428,7 @@ sub UpdatePostmasterXHeaderConfig {
 
     $Params{Client}->PATCH(
         "/api/v1/system/config/PostmasterX-Header",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     #  update ok...
@@ -1612,9 +1534,6 @@ sub UpdateMailFilter {
 
     }
 
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "MailFilter" => {
             %{$Params{MailFilter}}
@@ -1623,8 +1542,7 @@ sub UpdateMailFilter {
 
     $Params{Client}->PATCH(
         "/api/v1/system/communication/mailfilters/" . $Params{MailFilter}->{ID},
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
 
@@ -1686,20 +1604,18 @@ sub CreateMailFilter {
         }
 
     }
-
-    my $Headers = {
-        'Content-Type' => 'application/json',
-    };
     my $RequestBody = {
         "MailFilter" => {
             %{$Params{MailFilter}}
         }
     };
 
+
+    #print (to_json( $RequestBody ));
+
     $Params{Client}->POST(
         "/api/v1/system/communication/mailfilters",
-        encode("utf-8", to_json($RequestBody)),
-        $Headers
+        encode("utf-8", to_json($RequestBody))
     );
 
     if ($Params{Client}->responseCode() ne "201") {

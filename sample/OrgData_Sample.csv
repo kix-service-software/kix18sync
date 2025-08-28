@@ -1,42 +1,41 @@
-"Number";"Name";"Comment";"Street";"City";"Zip";"Country";"Url";"ValidID";"DynamicField_Type";
-"MAMU";"Mustermann GmbH";"A Company Manufacturing Everything";"Musterstr. 123";"Musterstadt";"12345";"Germany";"http://www.mustermann.org";"supplier/partner (internal)";
-"TWD";"Torchwood Ltd.";"Who knows these guys.";;"Cardiff";"CF10 4PZ";"United Kingdom";"http://torchwood.com";"customer,supplier/partner (internal)";
-"FKLHZ";"Fackelholz AG";"Kommt uns bekannt vor.";"Hubertusplatz 17";"Dresden";"01129";"Germany";"http://de.fackelholz.com";"customer,supplier/partner (external)";
-"KIXSSW";"KIX Service Software GmbH";"The KIX Services and Solution company.";"Schönherrstr. 8";"Chemnitz";"09113";"Germany";"http://www.cape-it.de";"customer,supplier/partner (internal)";
-"capeIT";"c.a.p.e. IT GmbH";"The historic name of KIXSSW.";"Schönherrstr. 8";"Chemnitz";"09113";"Germany";"http://www.cape-it.de";"customer,supplier/partner (internal)";
-"HRMSHL";"Harmony Shoal";"Some generic comment here.";"245 Walworth Rd.";"London";"SE17 2AL";"United Kingdom";"http://www.harmony-shoal.com";"customer,supplier/partner (external)";
-"ITKOM";"IT Kommunikations GmbH";"Some generic comment here.";"Bahnhofsstr. 57";"Darmstadt";"64291";"Germany";"http://it-kom.eu";"customer,supplier/partner (external)";
-"MDI";"Med-Dev International SA";"Some generic comment here.";"15 Rue de la Paix";"Paris";"75002";"France";"http://www.med-dev.fr";"customer,supplier/partner (external)";
-"R2T2";"R2T2-Service GmbH";"Some generic comment here.";"Annaberger Str. 240";"Chemnitz";"09125";"Germany";"http://www.r2-t2-service.de";"customer,supplier/partner (external)";
-"OSSI";"Open Source Services International";"Some generic comment here.";"An der Alster 32";"Koblenz Pfaffendorf";"56076";"Germany";"http://ossi.eu/";"customer,supplier/partner (external)";
-"AMK";"Amadeus-Kliniken gGmbH";"Some generic comment here.";"Rudower Strasse 88";"Roscheid";"54619";"Germany";"http://www.amadeus-kliniken.de";"customer";
-"EMA";"EM Automotive GmbH & Co. KG";"Some generic comment here.";"John-F-Kennedy-Damm 113";"Braunschweig";"38102";"Germany";"http://www.EM-Automotive.com";"customer";
-"ACDC";"Active Connect Data Center";"Some generic comment here.";"Karl-Liebknecht-Strasse 9";"Delmenhorst";"27751";"Germany";"http://www.AC-data-center.de";"supplier/partner (external)";
-"OLOG";"Olympic Logistik GmbH & Co KG";"Some generic comment here.";"Anhalter Strasse 72";"Dörrmoschel";"67806";"Germany";"http://www.olypmic-logistik.de";"supplier/partner (external)";
-"OSG";"Otto Schwerlast- und Gefahrguttransport GmbH";"Some generic comment here.";"Bissingzeile 60";"Stinstedt";"21772";"Germany";"http://www.otto-schwerlast.de";"customer";
-"SWG";"Schulz-Wallenstein GmbH";"Some generic comment here.";"Budapester Straße 34";"Angelburg";"35719";"Germany";"http://www.schulz-wallenstein.de";"customer";
-"CCSW";"Call-Center-Services Wedel";"Some generic comment here.";"Chausseestr. 18";"Wedel";"22871";"Germany";"http://www.ccsw.com";"customer";
-"LEM";"L.E.-Media AG";"Some generic comment here.";"Leipziger Strasse 15";"Minden Holzhausen";"32425";"Germany";"http://www.L-E-Media.de";"customer";
-"HMS";"Hypokrates Medical Services";"Some generic comment here.";"Bleibtreustrasse 58";"Dörentrup";"32694";"Germany";"http://www.hypokrates-MS.de";"customer";
-"PPFA";"P&P Fachanwälte für Markenrecht";"Some generic comment here.";"Hedemannstasse 1";"Oberteuringen";"88094";"Germany";"http://www.PuP-Markenrecht.de";"customer";
-"247L";"24x7 Labs";"Some generic comment here.";"Paul-Nevermann-Platz 88";"Niederwerrn";"97464";"Germany";"http://www.24x7-labs.de/";"customer";
-"AVENT";"Avantgarde Entertainment";"Some generic comment here.";"Knesebeckstrasse 24";"Mehren";"57635";"Germany";"http://www.avantgarde-entertainment.com";"customer";
-"HOCT";"Hex & Oct GmbH";"Some generic comment here.";"Unter den Linden 67";"Magdeburg";"39004";"Germany";"http://www.hex-oct.com";"customer";
-"SK24";"Socke24.de";"Some generic comment here.";"Prenzlauer Allee 94";"Markkleeberg";"04409";"Germany";"http://www.socke24.de";"customer";
-"FAK";"Feinlein Akademie";"Some generic comment here.";"Fugger Strasse 83";"Koblenz Oberwerth";"56075";"Germany";"http://www.feinlein-akademie.de/";"customer";
-"TKS";"Tee & Kaffee Spezialitäten GbR";"Some generic comment here.";"Lange Strasse 90";"Puchheim";"82178";"Germany";"http://www.t-sack.de";"customer";
-"RLHAM";"R-Line HAM";"Some generic comment here.";"Boxhagener Str. 26";"Hamburg Groß Borstel";"22453";"Germany";"http://www.r-line-ham.de/";"customer";
-"NGTWD";"Night Weddings";"Some generic comment here.";"Eichendorffstr. 72";"Unterwaldhausen";"88379";"Germany";"http://www.nightweddings.de";"customer";
-"MHHS";"Musikhaus Hauenstein";"Some generic comment here.";"Hardenbergstraße 88";"Hauenstein";"76846";"Germany";"http://www.musikhaus-hauenstein.de/";"customer";
-"WIW";"Wohnen in Weißenstadt";"Some generic comment here.";"Fontenay 74";"Weißenstadt";"95160";"Germany";"http://www.wohnen-in-weissenstadt.de";"customer";
-"FIT";"Flexus IT";"Some generic comment here.";"Brandenburgische Straße 51";"Berlin Oberschöneweide";"12459";"Germany";"http://www.flexus-it-services.de";"customer";
-"ALB";"Albatros Reederei";"Some generic comment here.";"Kurfürstendamm 89";"Rostock";"18010";"Germany";"http://www.albatros-shipping.eu";"customer";
-"DHZ";"Delta-Hertz EDV-Beratung";"Some generic comment here.";"Knesebeckstraße 47";"Iserlohn";"58644";"Germany";"http://www.delta-hertz-edv.de";"customer";
-"KAFF";"((klammeraffe))";"Some generic comment here.";"Büsingstrasse 6";"Gilching";"82205";"Germany";"http://www.klammer-affe.eu/";"customer";
-"MES";"My Energy Storage";"Some generic comment here.";"Hermannstrasse 45";"Guntersblum";"67583";"Germany";"http://www.my-energy-storage.de";"customer";
-"LPS";"LP Sicherheit";"Some generic comment here.";"Ruschestrasse 68";"Ballerstedt";"39606";"Germany";"http://www.L-P-Sicherheit.de";"customer";
-"BERC";"Berlin Cleaning GmbH";"Some generic comment here.";"Brandenburgische Str. 59";"Talheim";"74388";"Germany";"http://www.berlin-cleaning.com";"customer";
-"ERW";"European R-Ways AG";"Some generic comment here.";"Airline-Allee 1";"Köln";"51147";"Germany";"http://www.r-ways.eu/";"customer";
-"BWLC";"BWL-Consulting";"Some generic comment here.";"Brexbachstr. 357";"Höhr-Grenzhausen";"56203";"Germany";"http://www.bwlc-web.de/";"customer";
-"HMG";"Hübschmann Gastro";"Some generic comment here.";"Am Krombach 17";"Rennerod";"56477";"Germany";"http://www.huebschmann-gastro.de";"customer";
-"MCC";"Media City Consulting AG";"Some generic comment here.";"Altenburger Str. 13";"Leipzig";"04275";"Germany";"http://www.MC-consulting.eu";"customer";
+Number;Name;Comment;Street;City;Zip;Country;Url;ValidID;DynamicField_Type
+MAMU;Mustermann GmbH;A Company Manufacturing Everything;Musterstr. 123;Musterstadt;12345;Germany;http://www.mustermann.org;;service provider
+TWD;Torchwood Ltd.;Who knows these guys.;;Cardiff;CF10 4PZ;United Kingdom;http://torchwood.com;;customer,supplier/partner (external)
+FKLHZ;Fackelholz AG;Kommt uns bekannt vor.;Hubertusplatz 17;Dresden;01129;Germany;http://de.fackelholz.com;;customer
+KIX;KIX Service Software GmbH;The KIX Services and Solution company.;Schönherrstr. 8;Chemnitz;09113;Germany;http://www.cape-it.de;;customer,service provider
+HRMSHL;Harmony Shoal;no comment;245 Walworth Rd.;London;SE17 2AL;United Kingdom;http://www.harmony-shoal.com;;customer,supplier/partner (external)
+ITKOM;IT Kommunikations GmbH;Wir machen IT;Bahnhofsstr. 57;Darmstadt;64291;Germany;http://it-kom.eu;;customer,supplier/partner (external)
+MDI;Med-Dev International SA;Medical Hocus Pocus;15 Rue de la Paix;Paris;75002;France;http://www.med-dev.fr;;customer,supplier/partner (external)
+R2T2;R2T2-Service GmbH;Drone manufacturer and artificial not so intelligence.;Annaberger Str. 240;Chemnitz;09125;Germany;http://www.r2-t2-service.de;;customer,supplier/partner (external)
+OSSI;Open Source Services International;Open Source Everywhere;An der Alster 32;Koblenz Pfaffendorf;56076;Germany;http://ossi.eu/;;customer,supplier/partner (external)
+AMK;Amadeus-Kliniken gGmbH;Some generic comment here.;Rudower Strasse 88;Roscheid;54619;Germany;http://www.amadeus-kliniken.de;;customer
+EMA;EM Automotive GmbH & Co. KG;Some generic comment here.;John-F-Kennedy-Damm 113;Braunschweig;38102;Germany;http://www.EM-Automotive.com;;customer
+ACDC;Active Connect Data Center;Some generic comment here.;Karl-Liebknecht-Strasse 9;Delmenhorst;27751;Germany;http://www.AC-data-center.de;;supplier/partner (external)
+OLOG;Olympic Logistik GmbH & Co KG;Some generic comment here.;Anhalter Strasse 72;Dörrmoschel;67806;Germany;http://www.olypmic-logistik.de;;supplier/partner (external)
+OSG;Otto Schwerlast- und Gefahrguttransport GmbH;Some generic comment here.;Bissingzeile 60;Stinstedt;21772;Germany;http://www.otto-schwerlast.de;;customer
+SWG;Schulz-Wallenstein GmbH;Some generic comment here.;Budapester Straße 34;Angelburg;35719;Germany;http://www.schulz-wallenstein.de;;customer
+CCSW;Call-Center-Services Wedel;Some generic comment here.;Chausseestr. 18;Wedel;22871;Germany;http://www.ccsw.com;;customer
+LEM;L.E.-Media AG;Some generic comment here.;Leipziger Strasse 15;Minden Holzhausen;32425;Germany;http://www.L-E-Media.de;;customer
+HMS;Hypokrates Medical Services;Some generic comment here.;Bleibtreustrasse 58;Dörentrup;32694;Germany;http://www.hypokrates-MS.de;;customer
+PPFA;P&P Fachanwälte für Markenrecht;Anguli Advocatus;Hedemannstasse 1;Oberteuringen;88094;Germany;http://www.PuP-Markenrecht.de;;customer
+247L;24x7 Labs;Some generic comment here.;Paul-Nevermann-Platz 88;Niederwerrn;97464;Germany;http://www.24x7-labs.de/;;customer
+AVENT;Avantgarde Entertainment;Some generic comment here.;Knesebeckstrasse 24;Mehren;57635;Germany;http://www.avantgarde-entertainment.com;;customer
+HOCT;Hex & Oct GmbH;Some generic comment here.;Unter den Linden 67;Magdeburg;39004;Germany;http://www.hex-oct.com;;customer
+SK24;Socke24.de;Some generic comment here.;Prenzlauer Allee 94;Markkleeberg;04409;Germany;http://www.socke24.de;;customer
+FAK;Feinlein Akademie;Some generic comment here.;Fugger Strasse 83;Koblenz Oberwerth;56075;Germany;http://www.feinlein-akademie.de/;;customer
+TKS;Tee & Kaffee Spezialitäten GbR;Tea, coffeine, and coca leaves for recreational use only;Lange Strasse 90;Puchheim;82178;Germany;http://www.t-sack.de;;customer
+RLHAM;R-Line HAM;Some generic comment here.;Boxhagener Str. 26;Hamburg Groß Borstel;22453;Germany;http://www.r-line-ham.de/;;customer
+NGTWD;Night Weddings;Some generic comment here.;Eichendorffstr. 72;Unterwaldhausen;88379;Germany;http://www.nightweddings.de;;customer
+MHHS;Musikhaus Hauenstein;Some generic comment here.;Hardenbergstraße 88;Hauenstein;76846;Germany;http://www.musikhaus-hauenstein.de/;;customer
+WIW;Wohnen in Weißenstadt;Some generic comment here.;Fontenay 74;Weißenstadt;95160;Germany;http://www.wohnen-in-weissenstadt.de;;customer
+FIT;Flexus IT;Some generic comment here.;Brandenburgische Straße 51;Berlin Oberschöneweide;12459;Germany;http://www.flexus-it-services.de;;customer
+ALB;Albatros Reederei;Some generic comment here.;Kurfürstendamm 89;Rostock;18010;Germany;http://www.albatros-shipping.eu;;customer
+DHZ;Delta-Hertz EDV-Beratung;Some generic comment here.;Knesebeckstraße 47;Iserlohn;58644;Germany;http://www.delta-hertz-edv.de;;customer
+KAFF;((klammeraffe));Founded by Karl Klammer;Büsingstrasse 6;Gilching;82205;Germany;http://www.klammer-affe.eu/;;customer
+MES;My Energy Storage;Some generic comment here.;Hermannstrasse 45;Guntersblum;67583;Germany;http://www.my-energy-storage.de;;customer
+LPS;LP Sicherheit;Some generic comment here.;Ruschestrasse 68;Ballerstedt;39606;Germany;http://www.L-P-Sicherheit.de;;customer
+BERC;Berlin Cleaning GmbH;Cleaning out your closet.;Brandenburgische Str. 59;Talheim;74388;Germany;http://www.berlin-cleaning.com;;customer
+ERW;European R-Ways AG;Flying you everyhwere.;Airline-Allee 1;Köln;51147;Germany;http://www.r-ways.eu/;;customer
+BWLC;BWL-Consulting;Some generic comment here.;Brexbachstr. 357;Höhr-Grenzhausen;56203;Germany;http://www.bwlc-web.de/;;customer
+HMG;Hübschmann Gastro;Some generic comment here.;Am Krombach 17;Rennerod;56477;Germany;http://www.huebschmann-gastro.de;;customer
+MCC;Media City Consulting AG;Some generic comment here.;Altenburger Str. 13;Leipzig;04275;Germany;http://www.MC-consulting.eu;;customer

@@ -1,7 +1,7 @@
-"Full Queue Name";"Calendar Name";Validity;Comment;FollowUpId;"System Address Email";"UnlockTimeOut"
-"Sales";;valid;;1;"sales@example.com";1440
-"Facility Management";;valid;;1;"fm@example.com";1440
-"SAP Business Consulting";;valid;;1;"sap-support@example.com";1440
-"Printer Support";;valid;;1;"printer-support@example.com";1440
-"Managed Services";;valid;;1;"support@example.com";1440
-"Desktop Client Management";;valid;;1;"support@example.com";1440
+Full Queue Name;Calendar Name;Validity;Comment;FollowUpId;System Address Email;UnlockTimeOut
+Sales;;valid;;1;sales@examplecorp.com;1440
+Sales::Team 1;;valid;;1;Sales-team1@examplecorp.com;720
+Sales::Team 2;;valid;;1;sales-team2@examplecorp.com;360
+Shared Services;;valid;;1;kix-demo@localhost.org;2880
+Professional Services;;valid;;1;kix-demo@localhost.org;11520
+Research & Development;;valid;;1;kix-demo@localhost.org;0
