@@ -396,17 +396,7 @@ sub SearchContact {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    if( $IdentAttr =~ /^Email\d*/ ) {
-        push(@Conditions,
-            {
-                "Field"    => "Email",
-                "Operator" => "EQ",
-                "Type"     => "STRING",
-                "Value"    => $IdentStrg
-            }
-        );
-    }
-    elsif( $IdentAttr eq 'UserLogin' || $IdentAttr eq 'Login' ) {
+    if( $IdentAttr eq 'UserLogin' || $IdentAttr eq 'Login' ) {
         push(@Conditions,
             {
                 "Field"    => "UserLogin",
@@ -416,8 +406,18 @@ sub SearchContact {
             }
         );        
     }
-    print STDOUT "Search contact by $IdentAttr EQ '$IdentStrg'"
-        . ".\n" if ($Params{Verbose} > 3);
+    else {
+        push(@Conditions,
+            {
+                "Field"    => "Email",
+                "Operator" => "EQ",
+                "Type"     => "STRING",
+                "Value"    => $IdentStrg
+            }
+        );
+    }
+
+    print STDOUT "Search contact by $IdentAttr EQ '$IdentStrg'" if ($Params{Verbose} > 3);
 
 
     my $Query = {};
@@ -710,8 +710,7 @@ sub SearchUser {
     my $IdentAttr = $Params{Identifier} || "";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    print STDOUT "\nSearch contact/user by UserLogin EQ '$IdentStrg'"
-        . ".\n" if ($Params{Verbose} > 3);
+    print STDOUT "\nSearch contact/user by UserLogin EQ '$IdentStrg'" if ($Params{Verbose} > 3);
 
     push(@Conditions,
         {
@@ -983,7 +982,7 @@ sub SearchAsset {
     my $IdentAttr = $Params{Identifier} || "Number";
     my $IdentStrg = $Params{SearchValue} || "";
 
-    print STDOUT "Search asset by "
+    print STDOUT "\nSearch asset by "
         . " <$IdentAttr> EQ '$IdentStrg'"
         . ".\n" if ($Params{Verbose} > 3);
     push(@Conditions,
