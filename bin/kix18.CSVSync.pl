@@ -441,7 +441,7 @@ if ( $Config{ObjectType} eq 'Asset') {
           push( @{$CurrLine}, 'Create failed.');
         }
 
-        print STDOUT "$LineCount: Created asset <$NewAssetID> for <"
+        print STDOUT "\nCSV line $LineCount: Created asset <$NewAssetID> for <"
           .($Asset{'Version'}->{'Name'} || '')
           . ">.\n"
           if( $Config{Verbose} > 2);
@@ -1450,7 +1450,7 @@ sub _BuildAssetVersionData {
               && $Item->{Input}->{Type} !~ /^Text/
               && $Config{Verbose} > 4)
             {
-              print STDOUT "\n\tLookup value <$Value> for key <$Item->{Key}> of "
+              print STDOUT "\nLookup value <$Value> for key <$Item->{Key}> of "
                 ."type <$Item->{Input}->{Type}>. ";
             }
             if( $Value && $Item->{Input}->{Type} eq 'Organisation') {
@@ -1460,7 +1460,7 @@ sub _BuildAssetVersionData {
               });
               if ( $SearchResult{ID} ) {
                 $Value = $SearchResult{ID};
-                print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+                print STDOUT " => using <$Value>" if ($Config{Verbose} > 4);
               }
 
             }
@@ -1471,7 +1471,7 @@ sub _BuildAssetVersionData {
               });
               if ( $SearchResult{ID} ) {
                 $Value = $SearchResult{ID};
-                print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+                print STDOUT " => using <$Value>" if ($Config{Verbose} > 4);
               }
 
             }
@@ -1483,7 +1483,7 @@ sub _BuildAssetVersionData {
                 Class => $Item->{Input}->{Class},
                 Value => $Value
               }) || $Value;
-              print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+              print STDOUT " => using <$Value>" if ($Config{Verbose} > 4);
 
             }
             elsif( $Value && $Item->{Input}->{Type} eq 'CIClassReference') {
@@ -1496,7 +1496,7 @@ sub _BuildAssetVersionData {
               });
               if ( $SearchResult{ID} && !$Result{Msg} ) {
                   $Value = $SearchResult{ID};
-                  print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+                  print STDOUT " => using <$Value>" if ($Config{Verbose} > 4);
               }
 
             }
@@ -1507,7 +1507,7 @@ sub _BuildAssetVersionData {
                 Client => $KIXClient,
                 Name   => $Value
               }) || $Value;
-              print STDOUT "\n\t\tusing <$Value>" if ($Config{Verbose} > 4);
+              print STDOUT " => using <$Value>" if ($Config{Verbose} > 4);
 
             }
 
