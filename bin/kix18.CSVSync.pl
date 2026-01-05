@@ -682,7 +682,7 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
 
           # set user password...
           # TO DO - generate some pw if not given...
-          my $UserPw = 'Passw0rd!';
+          my $UserPw = 'PASSw0rd!';
           if ($Config{'Contact.ColIndex.Password'} && $CurrLine->[$Config{'Contact.ColIndex.Password'}]) {
             $UserPw = $CurrLine->[$Config{'Contact.ColIndex.Password'}];
           }
