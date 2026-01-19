@@ -8,6 +8,9 @@ These scripts are intented to work as **external tools** accessing KIX only by i
 
 Of course these scripts can be used on your docker host, running KIX. However this scenario is not a generic use case. These scripts **do not** evaluate your docker setup environment files. Therefore, keep in mind to give proper configuration of the KIX-REST **Backend** API, that is correct port number if running on the docker host.
 
+## Disclaimer
+
+This is an unofficial, community-made helper tool and not part of the main product. It is not supported or endorsed by the official developers. Use it if it helps you — but please do so at your own risk 🙂
 
 
 ## Contents/Structure
