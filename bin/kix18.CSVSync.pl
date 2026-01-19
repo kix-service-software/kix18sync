@@ -682,7 +682,7 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
 
           # set user password...
           # TO DO - generate some pw if not given...
-          my $UserPw = 'PASSw0rd!';
+          my $UserPw = undef;
           if ($Config{'Contact.ColIndex.Password'} && $CurrLine->[$Config{'Contact.ColIndex.Password'}]) {
             $UserPw = $CurrLine->[$Config{'Contact.ColIndex.Password'}];
           }
@@ -746,7 +746,12 @@ elsif ( $Config{ObjectType} eq 'Contact' || $Config{ObjectType} eq 'User') {
           }
           # create new user...
           else {
-            $User{UserPw} = $UserPw;
+
+            # only set UserPw if pw given (backend creates random pw then)
+            if( $UserPw ) {
+              $User{UserPw} = $UserPw;
+            }
+
             my $NewUserID = KIX18API::CreateUser(
               { %Config, Client => $KIXClient, User => \%User }
             ) || '';
